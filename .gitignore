@@ -1,0 +1,87 @@
+# ==============================================================================
+# DIGITAL SCALE - GITIGNORE CONFIGURATION
+# ==============================================================================
+
+# --- Datasets & Heavy Archives (Must be hosted on Google Drive) ---
+Entrenar_Data/Image Dataset/
+**/Image Dataset/
+Image Dataset/
+*.zip
+*.rar
+*.7z
+*.tar
+*.tar.gz
+
+# --- Model Checkpoints & Large Weights ---
+# (best_model.ckpt ~81MB should be hosted on Google Drive / GitHub Releases)
+*.ckpt
+*.pth
+*.pt
+Entrenar_Data/output/
+
+# --- Posture Keypoint Models (Always track these, required for inference) ---
+!DigitalScale/trained_models/keypoint_models/
+!DigitalScale/trained_models/keypoint_models/*.pkl
+
+# --- Python & Bytecode Cache ---
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# --- Virtual Environments ---
+venv/
+.venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+
+# --- IDEs & Editors ---
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.project
+.pydevproject
+.settings/
+
+# --- Jupyter Notebooks Cache ---
+.ipynb_checkpoints/
+*/.ipynb_checkpoints/*
+
+# --- OS Specific Files ---
+.DS_Store
+Thumbs.db
+ehthumbs.db
+desktop.ini
+
+# --- Android Build & Gradle Cache ---
+DigitalScale/app/android/app/.gradle/
+DigitalScale/app/android/.gradle/
+.gradle/
+**/build/
+*.apk
+*.aab
+
+# --- Training Logs & Tracking ---
+wandb/
+*.log

@@ -1,0 +1,26 @@
+# ==============================================================================
+# DIGITAL SCALE - DEPENDENCIES
+# ==============================================================================
+# Compatible with Python 3.10, 3.11, and 3.12.
+
+# --- Deep Learning & Computer Vision ---
+# NOTE: For GPU acceleration with CUDA 12.1, install PyTorch using:
+# pip install torch torchvision --index-url https://download.pytorch.org/whl/cu121
+torch>=2.2.0
+torchvision>=0.17.0
+opencv-python>=4.8.0
+mediapipe>=0.10.14
+Pillow>=9.5.0
+
+# --- Machine Learning & Data Processing ---
+scikit-learn>=1.3.0
+pandas>=2.0.0
+numpy>=1.24.0,<2.0.0
+tqdm>=4.65.0
+matplotlib>=3.7.0
+seaborn>=0.12.0
+
+# --- Optional Utilities & Mobile CLAID Framework ---
+pydantic~=2.8
+python-dotenv>=1.0.0
+# claid==0.6.4 # Required only for Android/Mobile CLAID runtime
