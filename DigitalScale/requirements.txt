@@ -1,6 +1,8 @@
-claid==0.6.4
+# claid==0.6.4 # Required only for Android/CLAID mobile runtime
 pydantic~=2.8
-opencv-python
+opencv-python>=4.8.0
+mediapipe==0.10.14
+Pillow>=9.5.0
 scikit-learn
 pandas
 torch
@@ -9,7 +11,6 @@ python-dotenv
 seaborn
 matplotlib
 tqdm
-python-dotenv
 #git+https://github.com/facebookresearch/detectron2.git
 wandb
 

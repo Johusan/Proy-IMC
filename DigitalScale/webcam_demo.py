@@ -63,6 +63,100 @@ def load_mediapipe():
             import mediapipe.solutions.drawing_utils as mp_drawing
     return mp_pose, mp_drawing
 
+WINDOW_NAME = "DigitalScale Live Webcam BMI"
+
+def show_responsive_window(window_name, frame):
+    """
+    Renders frame responsively inside an OpenCV window.
+    Maintains aspect ratio and centers video on a sleek dark canvas when resized or maximized.
+    """
+    try:
+        if cv2.getWindowProperty(window_name, cv2.WND_PROP_VISIBLE) < 1:
+            return False
+        rect = cv2.getWindowImageRect(window_name)
+    except Exception:
+        cv2.imshow(window_name, frame)
+        return True
+
+    win_w, win_h = rect[2], rect[3]
+    frame_h, frame_w = frame.shape[:2]
+
+    if win_w > 100 and win_h > 100:
+        scale = min(win_w / frame_w, win_h / frame_h)
+        scaled_w = max(1, int(frame_w * scale))
+        scaled_h = max(1, int(frame_h * scale))
+
+        resized = cv2.resize(frame, (scaled_w, scaled_h), interpolation=cv2.INTER_LINEAR)
+
+        # Create dark sleek canvas matching current window dimensions
+        canvas = np.full((win_h, win_w, 3), 26, dtype=np.uint8)
+
+        # Center resized frame on the canvas
+        y_offset = (win_h - scaled_h) // 2
+        x_offset = (win_w - scaled_w) // 2
+        canvas[y_offset:y_offset + scaled_h, x_offset:x_offset + scaled_w] = resized
+
+        cv2.imshow(window_name, canvas)
+    else:
+        cv2.imshow(window_name, frame)
+    return True
+
+def get_clean_torso_crop(pil_img, keypoints, img_w, img_h, margin_factor=1.4):
+    """
+    Extracts a clean torso crop bounded strictly within image dimensions,
+    preventing PIL from inserting artificial black borders outside camera bounds.
+    """
+    shoulder_w = abs(keypoints['right_shoulder_x'] - keypoints['left_shoulder_x'])
+    if shoulder_w < 10:
+        shoulder_w = img_w * 0.25
+
+    margin = shoulder_w * (margin_factor - 1.0)
+    
+    min_sx = min(keypoints['left_shoulder_x'], keypoints['right_shoulder_x'])
+    max_sx = max(keypoints['left_shoulder_x'], keypoints['right_shoulder_x'])
+    min_ey = min(keypoints['left_eye_y'], keypoints['right_eye_y'])
+    max_sy = max(keypoints['left_shoulder_y'], keypoints['right_shoulder_y'])
+
+    # Torso region bounds
+    raw_x1 = min_sx - margin
+    raw_x2 = max_sx + margin
+    raw_y1 = min_ey - (margin * 0.5)
+    raw_y2 = max_sy + (shoulder_w * 1.6)
+
+    box_w = raw_x2 - raw_x1
+    box_h = raw_y2 - raw_y1
+    side = max(box_w, box_h)
+    
+    cx = (raw_x1 + raw_x2) / 2.0
+    cy = (raw_y1 + raw_y2) / 2.0
+
+    x1 = cx - side / 2.0
+    x2 = cx + side / 2.0
+    y1 = cy - side / 2.0
+    y2 = cy + side / 2.0
+
+    # Shift box if it spills over image edges so we capture real pixels
+    if x1 < 0:
+        x2 += abs(x1)
+        x1 = 0.0
+    if x2 > img_w:
+        x1 -= (x2 - img_w)
+        x2 = float(img_w)
+    if y1 < 0:
+        y2 += abs(y1)
+        y1 = 0.0
+    if y2 > img_h:
+        y1 -= (y2 - img_h)
+        y2 = float(img_h)
+
+    # Strict clamping to avoid any out-of-bounds black padding by PIL
+    final_x1 = max(0, min(img_w - 2, int(round(x1))))
+    final_x2 = max(final_x1 + 10, min(img_w, int(round(x2))))
+    final_y1 = max(0, min(img_h - 2, int(round(y1))))
+    final_y2 = max(final_y1 + 10, min(img_h, int(round(y2))))
+
+    return pil_img.crop((final_x1, final_y1, final_x2, final_y2))
+
 def open_working_webcam():
     """Scans camera indices (1, 0, 2) with DirectShow backend on Windows."""
     indices_to_try = [1, 0, 2]
@@ -159,17 +253,26 @@ def main():
         print("Error: Could not open any webcam device.", flush=True)
         return
 
+    # 8. Setup Resizable Responsive Window
+    cv2.namedWindow(WINDOW_NAME, cv2.WINDOW_NORMAL)
+    cv2.resizeWindow(WINDOW_NAME, 960, 720)
+
     print("\nStarting live video feed...", flush=True)
     print("  - Hold a good upright posture for 3 seconds for AUTO-CAPTURE.")
     print("  - Press 's' to capture manually.")
     print("  - Press 'r' to reset after capture.")
-    print("  - Press 'q' to quit.\n", flush=True)
+    print("  - Press 'q' or close window to quit.\n", flush=True)
 
     good_posture_start_time = None
     last_captured_bmi = None
     captured_result_image = None
 
     while cap.isOpened():
+        # Check if user clicked the [X] close window button
+        if cv2.getWindowProperty(WINDOW_NAME, cv2.WND_PROP_VISIBLE) < 1:
+            print("Window closed by user.", flush=True)
+            break
+
         ret, frame = cap.read()
         if not ret or frame is None or frame.size == 0:
             time.sleep(0.01)
@@ -190,20 +293,23 @@ def main():
         if captured_result_image is not None:
             display_frame = frame.copy()
 
-            # Display panel
-            cv2.rectangle(display_frame, (10, 10), (w - 220, 100), (0, 0, 0), -1)
-            cv2.putText(display_frame, f"IMC ESTIMADO: {last_captured_bmi:.2f} kg/m2", (20, 50), 
+            # Semi-transparent dark overlay banner
+            overlay = display_frame.copy()
+            cv2.rectangle(overlay, (10, 10), (w - 220, 110), (0, 0, 0), -1)
+            cv2.addWeighted(overlay, 0.75, display_frame, 0.25, 0, display_frame)
+
+            cv2.putText(display_frame, f"IMC ESTIMADO: {last_captured_bmi:.2f} kg/m2", (20, 55), 
                         cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 255, 0), 2)
             
-            cv2.putText(display_frame, "Presiona 'r' para medir de nuevo | 'q' para salir", (20, 85), 
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, (200, 200, 200), 1)
+            cv2.putText(display_frame, "Presiona 'r' para medir de nuevo | 'q' para salir", (20, 92), 
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.52, (220, 220, 220), 1)
 
-            # Draw captured crop thumbnail on top right
+            # Draw captured crop thumbnail on top right (180x180)
             thumb = cv2.resize(captured_result_image, (180, 180))
             display_frame[20:200, w-200:w-20] = thumb
             cv2.rectangle(display_frame, (w-200, 20), (w-20, 200), (0, 255, 0), 2)
 
-            cv2.imshow("DigitalScale Live Webcam BMI", display_frame)
+            show_responsive_window(WINDOW_NAME, display_frame)
             if key == ord('r'):
                 captured_result_image = None
                 last_captured_bmi = None
@@ -227,18 +333,29 @@ def main():
             bbox_h = max(1, y2 - y1)
             bbox_ratio = (bbox_w * bbox_h) / (w * h)
 
-            # Draw Person Bounding Box
-            cv2.rectangle(frame, (x1, y1), (x2, y2), (255, 0, 0), 2)
+            # Map MediaPipe -> COCO-17
+            coco_landmarks = np.zeros((17, 2))
+            for mp_idx, coco_idx in MP_TO_COCO.items():
+                coco_landmarks[coco_idx] = [landmarks[mp_idx].x * w, landmarks[mp_idx].y * h]
 
-            if bbox_ratio < 0.15:
+            # Framing & Proximity Checks
+            shoulder_span = abs(coco_landmarks[5][0] - coco_landmarks[6][0])
+            touching_border = (x1 < 15) or (x2 > w - 15) or (y1 < 10)
+            is_too_close = (bbox_ratio > 0.55) or (shoulder_span > w * 0.45) or touching_border
+
+            # Draw Person Bounding Box
+            color_bbox = (0, 165, 255) if is_too_close else (255, 0, 0)
+            cv2.rectangle(frame, (x1, y1), (x2, y2), color_bbox, 2)
+
+            if is_too_close:
+                status_text = "DEMASIADO CERCA: Retroceda para enfocar el torso"
+                color_status = (0, 165, 255) # Orange warning
+                good_posture_start_time = None
+            elif bbox_ratio < 0.15:
                 status_text = f"Muy lejos de la camara (Ratio: {bbox_ratio:.2f})"
+                color_status = (0, 0, 255) # Red
                 good_posture_start_time = None
             else:
-                # Map MediaPipe -> COCO-17
-                coco_landmarks = np.zeros((17, 2))
-                for mp_idx, coco_idx in MP_TO_COCO.items():
-                    coco_landmarks[coco_idx] = [landmarks[mp_idx].x * w, landmarks[mp_idx].y * h]
-
                 # Normalize COCO keypoints wrt bbox
                 normalized_kpts = []
                 for px, py in coco_landmarks:
@@ -251,7 +368,7 @@ def main():
                 X_pca = pca.transform(X_scaled)
                 posture_cluster = kmeans.predict(X_pca)[0]
 
-                # Clusters 1 and 2 (0-indexed 0, 1, 2, 3) are acceptable upright postures
+                # Clusters 0, 1, 2, 3 are acceptable upright postures
                 is_valid_pose = posture_cluster in [0, 1, 2, 3]
 
                 if not is_valid_pose:
@@ -272,7 +389,7 @@ def main():
                         status_text = f"POSTURA CORRECTA! Mantenga la posicion... {remaining_sec}s"
                         # Draw prominent countdown on center of screen
                         cv2.putText(frame, f"CAPTURANDO EN {remaining_sec}...", (w//2 - 200, 100), 
-                                    cv2.FONT_HERSHEY_SIMPLEX, 1.2, (0, 255, 255), 3)
+                                     cv2.FONT_HERSHEY_SIMPLEX, 1.2, (0, 255, 255), 3)
                     else:
                         status_text = "CAPTURANDO AUTOMATICAMENTE!"
                         should_trigger = True
@@ -284,7 +401,7 @@ def main():
             should_trigger = True
 
         if should_trigger and results and results.pose_landmarks:
-            print("Auto-trigger activated! Estimating BMI...", flush=True)
+            print("Trigger activated! Estimating BMI...", flush=True)
             
             keypoint_dict = {
                 'left_shoulder_x': coco_landmarks[5][0],
@@ -297,10 +414,12 @@ def main():
             
             pil_img = Image.fromarray(rgb_frame)
             try:
-                cropped_img = crop_to_torso(pil_img, keypoint_dict)
+                cropped_img = get_clean_torso_crop(pil_img, keypoint_dict, w, h)
             except Exception as e:
                 print(f"Torso crop fallback: {e}", flush=True)
-                cropped_img = pil_img.crop((x1, y1, x2, y2))
+                fx1, fy1 = max(0, x1), max(0, y1)
+                fx2, fy2 = min(w, x2), min(h, y2)
+                cropped_img = pil_img.crop((fx1, fy1, fx2, fy2))
 
             input_tensor = preprocess(cropped_img).unsqueeze(0).to(device)
             with torch.no_grad():
@@ -312,9 +431,12 @@ def main():
             captured_result_image = cv2.cvtColor(np.array(cropped_img), cv2.COLOR_RGB2BGR)
             good_posture_start_time = None
 
-        # Draw Overlay Status
-        cv2.putText(frame, status_text, (20, 40), cv2.FONT_HERSHEY_SIMPLEX, 0.7, color_status, 2)
-        cv2.imshow("DigitalScale Live Webcam BMI", frame)
+        # Draw Overlay Status with dark pill background for clear readability
+        (text_w, text_h), _ = cv2.getTextSize(status_text, cv2.FONT_HERSHEY_SIMPLEX, 0.7, 2)
+        cv2.rectangle(frame, (15, 15), (25 + text_w, 25 + text_h + 10), (0, 0, 0), -1)
+        cv2.putText(frame, status_text, (20, 20 + text_h), cv2.FONT_HERSHEY_SIMPLEX, 0.7, color_status, 2)
+
+        show_responsive_window(WINDOW_NAME, frame)
 
         if key == ord('q'):
             print("Exiting demo...", flush=True)
