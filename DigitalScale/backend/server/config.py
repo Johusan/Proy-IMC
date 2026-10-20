@@ -35,7 +35,7 @@ KMEANS_PATH = os.path.join(KEYPOINT_MODELS_DIR, "kmeans.pkl")
 FRONTEND_DIR = os.path.abspath(os.path.join(BASE_DIR, "..", "frontend"))
 
 # Parametros de red y ejecucion del servidor FastAPI
-HOST = os.getenv("DIGITALSCALE_HOST", "127.0.0.1")
+HOST = os.getenv("DIGITALSCALE_HOST", "0.0.0.0")
 PORT = int(os.getenv("DIGITALSCALE_PORT", "8000"))
 RELOAD = os.getenv("DIGITALSCALE_RELOAD", "false").lower() in ("true", "1", "yes")
 
@@ -44,11 +44,7 @@ _origins_env = os.getenv("DIGITALSCALE_ALLOWED_ORIGINS", "")
 if _origins_env:
     ALLOWED_ORIGINS = [orig.strip() for orig in _origins_env.split(",") if orig.strip()]
 else:
-    ALLOWED_ORIGINS = [
-        "http://localhost:8000",
-        "http://127.0.0.1:8000",
-        f"http://{HOST}:{PORT}"
-    ]
+    ALLOWED_ORIGINS = ["*"]
 
 # Parametros de preprocesamiento para la red neuronal SE-DenseNet-121
 IMG_MEAN = [0.485, 0.456, 0.406]

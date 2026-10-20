@@ -74,12 +74,13 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# Configuracion de politicas de acceso CORS con origenes restringidos
+# Configuracion de politicas de acceso CORS
+_allow_all = ALLOWED_ORIGINS == ["*"]
 app.add_middleware(
     CORSMiddleware,
     allow_origins=ALLOWED_ORIGINS,
-    allow_credentials=True,
-    allow_methods=["GET", "POST", "OPTIONS"],
+    allow_credentials=not _allow_all,
+    allow_methods=["*"],
     allow_headers=["*"],
 )
 
@@ -125,8 +126,23 @@ if os.path.exists(FRONTEND_DIR):
         return {"mensaje": "results.html no encontrado."}
 
 if __name__ == "__main__":
-    import uvicorn
+    import socket
+
+    def get_local_ip():
+        try:
+            s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            s.connect(("8.8.8.8", 80))
+            ip = s.getsockname()[0]
+            s.close()
+            return ip
+        except Exception:
+            return "127.0.0.1"
+
+    local_ip = get_local_ip()
+
     logger.info("Iniciando servidor backend modular de DigitalScale AI...")
-    logger.info(f"Servidor Web Local:  http://{HOST}:{PORT}")
-    logger.info(f"Documentacion (API): http://{HOST}:{PORT}/docs")
+    logger.info(f"Servidor Local:       http://localhost:{PORT}")
+    if HOST in ("0.0.0.0", ""):
+        logger.info(f"Acceso en Red Local:  http://{local_ip}:{PORT}")
+    logger.info(f"Documentacion (API):  http://localhost:{PORT}/docs")
     uvicorn.run("server.main:app", host=HOST, port=PORT, reload=RELOAD)

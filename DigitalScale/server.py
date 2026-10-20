@@ -23,8 +23,24 @@ if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
     logger = logging.getLogger("DigitalScaleLauncher")
 
+    import socket
+
+    def get_local_ip():
+        try:
+            s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            s.connect(("8.8.8.8", 80))
+            ip = s.getsockname()[0]
+            s.close()
+            return ip
+        except Exception:
+            return "127.0.0.1"
+
+    local_ip = get_local_ip()
+
     logger.info("Iniciando DigitalScale AI desde la raiz del proyecto...")
-    logger.info(f"Servidor Web Local:  http://{HOST}:{PORT}")
-    logger.info(f"Documentacion (API): http://{HOST}:{PORT}/docs")
+    logger.info(f"Servidor Local:       http://localhost:{PORT}")
+    if HOST in ("0.0.0.0", ""):
+        logger.info(f"Acceso en Red Local:  http://{local_ip}:{PORT}")
+    logger.info(f"Documentacion (API):  http://localhost:{PORT}/docs")
 
     uvicorn.run("server.main:app", host=HOST, port=PORT, reload=RELOAD)
