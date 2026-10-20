@@ -145,8 +145,9 @@ class CameraService {
     // Capturar orientacion natural sin invertir coordenadas
     ctx.drawImage(this.video, 0, 0, canvas.width, canvas.height);
 
-    // Exportar a JPEG optimizado (0.75) para balance entre calidad y latencia de red
-    return canvas.toDataURL('image/jpeg', 0.75);
+    // Exportar a JPEG de alta fidelidad (0.92) para preservar texturas anatomicas
+    // que el modelo SE-DenseNet-121 usa como señal de complexion y masa corporal.
+    return canvas.toDataURL('image/jpeg', 0.92);
   }
 }
 
