@@ -72,11 +72,66 @@ document.addEventListener('DOMContentLoaded', async () => {
   pollBackendHealth();
   setInterval(pollBackendHealth, 8000);
 
-  // 4. Iniciar Flujo de Video y MediaPipe Pose en Vivo
+  // 4. Sistema de Notificaciones Toast Flotantes no bloqueantes
+  function showToast(message, type = 'warning', title = null, duration = 4500) {
+    const container = document.getElementById('toast-container');
+    if (!container) return;
+
+    const toast = document.createElement('div');
+    toast.className = `toast-item toast-${type}`;
+
+    let iconName = 'warning';
+    let defaultTitle = 'Aviso de IA';
+    if (type === 'error') {
+      iconName = 'error';
+      defaultTitle = 'Error';
+    } else if (type === 'info') {
+      iconName = 'info';
+      defaultTitle = 'Información';
+    }
+
+    toast.innerHTML = `
+      <span class="material-symbols-outlined toast-icon">${iconName}</span>
+      <div class="toast-content">
+        <div class="toast-title">${title || defaultTitle}</div>
+        <div class="toast-message">${message}</div>
+      </div>
+      <button class="toast-close-btn" type="button" aria-label="Cerrar notificación">
+        <span class="material-symbols-outlined" style="font-size: 18px;">close</span>
+      </button>
+    `;
+
+    const closeBtn = toast.querySelector('.toast-close-btn');
+    const dismiss = () => {
+      toast.classList.add('fade-out');
+      setTimeout(() => {
+        if (toast.parentElement) toast.parentElement.removeChild(toast);
+      }, 300);
+    };
+
+    if (closeBtn) {
+      closeBtn.addEventListener('click', dismiss);
+    }
+
+    container.appendChild(toast);
+
+    if (duration > 0) {
+      setTimeout(dismiss, duration);
+    }
+  }
+
+  // 5. Iniciar Flujo de Video y MediaPipe Pose en Vivo
   function stopVisionLoop() {
     if (animationFrameId !== null) {
       cancelAnimationFrame(animationFrameId);
       animationFrameId = null;
+    }
+  }
+
+  function resumeVisionLoop() {
+    if (animationFrameId === null) {
+      lastFrameTime = performance.now();
+      animationFrameId = requestAnimationFrame(runVisionLoop);
     }
   }
 
@@ -96,6 +151,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
     if (!isCapturing) {
       animationFrameId = requestAnimationFrame(runVisionLoop);
+    } else {
+      animationFrameId = null;
     }
   }
 
@@ -125,12 +182,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     animationFrameId = requestAnimationFrame(runVisionLoop);
   }
 
-  // 5. Configurar Disparo al Finalizar la Cuenta Regresiva de 3s
+  // 6. Configurar Disparo al Finalizar la Cuenta Regresiva de 3s
   hudComponent.setOnCapture(async () => {
     await executeCaptureAndPredict();
   });
 
-  // 6. Proceso de Captura y Llamada a la IA
+  // 7. Proceso de Captura y Llamada a la IA
   async function executeCaptureAndPredict() {
     if (isCapturing) return;
     isCapturing = true;
@@ -167,16 +224,28 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Redirigir a la pantalla de resultados clinicos
         window.location.href = 'pages/results.html';
       } else {
-        alert(`Aviso de IA: ${result.message || 'No se detecto un torso erguido'}\nPor favor ubiquese erguido frente a la camara y reintente.`);
-        hudComponent.updatePill('ready', 'Por favor quedese quieto frente a la camara');
+        const errorMsg = result.message || result.posture_status || 'No se detectó un torso erguido en el encuadre.';
+        showToast(errorMsg, 'warning', 'Aviso de Postura y Distancia');
+        hudComponent.updatePill('alert', errorMsg);
+        hudComponent.cancelCountdown();
+        hudComponent.stableFramesCount = 0;
       }
     } catch (e) {
       if (dom.loadingModal) {
         dom.loadingModal.classList.remove('active');
       }
-      alert(`Error al procesar: ${e.message}`);
+      showToast(`Error al procesar: ${e.message}`, 'error', 'Error de Comunicación');
+      hudComponent.updatePill('alert', 'Error de procesamiento. Reintentando...');
+      hudComponent.cancelCountdown();
+      hudComponent.stableFramesCount = 0;
     } finally {
       isCapturing = false;
+      isProcessingFrame = false;
+      if (hudComponent) {
+        hudComponent.isSendingFrame = false;
+      }
+      // Reanudar inmediatamente el bucle de visión en vivo
+      resumeVisionLoop();
     }
   }
 
