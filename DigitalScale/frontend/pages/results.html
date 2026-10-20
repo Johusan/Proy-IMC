@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DigitalScale AI - Informe de Composición Corporal</title>
+  <meta name="description" content="Dashboard clínico de resultados del análisis biométrico: Índice de Masa Corporal (IMC), velocímetro de la OMS, auditoría visual de IA y recomendaciones de salud.">
+
+  <!-- Tipografías de Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;600;700;800&family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap" rel="stylesheet">
+
+  <!-- Estilos CSS -->
+  <link rel="stylesheet" href="../css/style.css">
+  <link rel="stylesheet" href="../css/results.css">
+</head>
+<body>
+
+  <!-- Cabecera Clínica Sticky -->
+  <header class="app-header">
+    <div class="header-inner">
+      <div class="brand-group">
+        <div class="brand-logo-box">
+          <span class="material-symbols-outlined" style="font-size: 26px;">monitor_weight</span>
+        </div>
+        <div>
+          <h1 class="brand-title">Digital<span>Scale</span> AI</h1>
+          <p class="brand-subtitle">Panel de Diagnóstico Clínico</p>
+        </div>
+      </div>
+
+      <!-- Navegación por Pantallas -->
+      <nav class="header-nav" aria-label="Navegación principal">
+        <a href="../index.html" class="nav-pill" id="nav-btn-scanner">
+          <span class="material-symbols-outlined" style="font-size: 18px;">videocam</span>
+          <span>Escáner en Vivo</span>
+        </a>
+        <a href="results.html" class="nav-pill active" id="nav-btn-results">
+          <span class="material-symbols-outlined" style="font-size: 18px;">analytics</span>
+          <span>Resultados Clínicos</span>
+        </a>
+      </nav>
+
+      <!-- Botón de Nueva Medición en Cabecera -->
+      <div class="header-actions">
+        <a href="../index.html" class="btn btn-secondary btn-sm" id="header-btn-new-scan">
+          <span class="material-symbols-outlined" style="font-size: 18px;">add_circle</span>
+          <span>Nueva Medición</span>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Contenido Principal: Dashboard Clínico de Resultados (Diseño Stitch) -->
+  <main class="main-content">
+    <div class="container-inner">
+      <div class="results-dashboard-layout">
+        
+        <!-- Tarjeta Hero: Cifra de IMC, Diagnóstico OMS y Velocímetro Semicircular Stitch -->
+        <section class="hero-result-card" aria-label="Resumen de evaluación corporal">
+          
+          <div class="hero-header-row">
+            <div class="hero-title-group">
+              <div class="hero-icon-box">
+                <span class="material-symbols-outlined" style="font-size: 28px;">health_and_safety</span>
+              </div>
+              <div>
+                <p class="hero-meta-label">Evaluación Biométrica Oficial</p>
+                <h2 class="hero-main-title">Composición Corporal Estimada</h2>
+              </div>
+            </div>
+            <div>
+              <span id="evaluation-date" style="font-size: 0.82rem; font-weight: 600; color: var(--text-outline);">--/--/---- --:--</span>
+            </div>
+          </div>
+
+          <div class="hero-body-grid">
+            
+            <!-- Columna de Métricas (5 cols) -->
+            <div class="metrics-column">
+              <div>
+                <span class="metric-sub-label">Índice de Masa Corporal (IMC)</span>
+                <div class="metric-number-row">
+                  <span id="bmi-number" class="bmi-value">--.-</span>
+                  <span class="bmi-unit">kg/m²</span>
+                </div>
+              </div>
+
+              <!-- Chip OMS -->
+              <div id="who-badge" class="who-chip-status normal">
+                <span class="who-chip-dot"></span>
+                <span id="who-badge-text">PESO NORMAL (SALUDABLE)</span>
+              </div>
+
+              <!-- Texto de Diagnóstico Personalizado -->
+              <p id="diagnosis-text" class="diagnosis-lead-text">
+                Cargando análisis de composición corporal...
+              </p>
+
+            </div>
+
+            <!-- Columna del Velocímetro Stitch (7 cols) -->
+            <div class="gauge-column">
+              <div class="gauge-container">
+                <!-- SVG Oficial del Velocímetro Stitch -->
+                <svg id="stitch-gauge-svg" class="gauge-svg" viewBox="0 0 400 220" xmlns="http://www.w3.org/2000/svg">
+                  <defs>
+                    <linearGradient id="underweight-grad" x1="0%" y1="100%" x2="50%" y2="0%">
+                      <stop offset="0%" stop-color="#006398" />
+                      <stop offset="100%" stop-color="#5bb8fe" />
+                    </linearGradient>
+                    <linearGradient id="normal-grad" x1="0%" y1="50%" x2="50%" y2="0%">
+                      <stop offset="0%" stop-color="#00855d" />
+                      <stop offset="100%" stop-color="#85f8c4" />
+                    </linearGradient>
+                    <linearGradient id="overweight-grad" x1="0%" y1="0%" x2="100%" y2="50%">
+                      <stop offset="0%" stop-color="#ffb77c" />
+                      <stop offset="100%" stop-color="#8d4b00" />
+                    </linearGradient>
+                    <linearGradient id="obese-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%" stop-color="#ffb4ab" />
+                      <stop offset="100%" stop-color="#ba1a1a" />
+                    </linearGradient>
+                    <filter id="shadow-drop" x="-10%" y="-10%" width="120%" height="120%">
+                      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-opacity="0.25" />
+                    </filter>
+                  </defs>
+
+                  <!-- 4 Arcos del Semicírculo OMS (Radio 135, Grosor 28, Centro cx=200, cy=195) -->
+                  <!-- 1. Bajo Peso: 180° a 207° -->
+                  <path d="M 65 195 A 135 135 0 0 1 79.7 133.7" fill="none" stroke="url(#underweight-grad)" stroke-width="26" stroke-linecap="round" />
+                  <!-- 2. Normal: 207° a 267° -->
+                  <path d="M 83.5 125.8 A 135 135 0 0 1 192.9 60.2" fill="none" stroke="url(#normal-grad)" stroke-width="26" />
+                  <!-- 3. Sobrepeso: 267° a 308° -->
+                  <path d="M 207.1 60.2 A 135 135 0 0 1 283.1 88.6" fill="none" stroke="url(#overweight-grad)" stroke-width="26" />
+                  <!-- 4. Obesidad: 308° a 360° -->
+                  <path d="M 289.4 94.4 A 135 135 0 0 1 335 195" fill="none" stroke="url(#obese-grad)" stroke-width="26" stroke-linecap="round" />
+
+                  <!-- Líneas y Marcas de Escala -->
+                  <text x="50" y="212" font-family="'Inter', sans-serif" font-size="11" font-weight="700" fill="#6d7a72" text-anchor="middle">15.0</text>
+                  <text x="80" y="105" font-family="'Inter', sans-serif" font-size="11" font-weight="700" fill="#006398" text-anchor="middle">18.5</text>
+                  <text x="200" y="44" font-family="'Inter', sans-serif" font-size="11" font-weight="700" fill="#006948" text-anchor="middle">24.9</text>
+                  <text x="310" y="80" font-family="'Inter', sans-serif" font-size="11" font-weight="700" fill="#8d4b00" text-anchor="middle">29.9</text>
+                  <text x="350" y="212" font-family="'Inter', sans-serif" font-size="11" font-weight="700" fill="#ba1a1a" text-anchor="middle">38+</text>
+
+                  <!-- Aguja Dinámica -->
+                  <g id="gauge-needle-group">
+                    <line id="gauge-needle-line" x1="200" y1="195" x2="200" y2="70" stroke="#131b2e" stroke-width="4.5" stroke-linecap="round" filter="url(#shadow-drop)" />
+                    <circle id="gauge-needle-tip" cx="200" cy="70" r="6" fill="#006948" stroke="#ffffff" stroke-width="2" />
+                    <!-- Centro del Pivot -->
+                    <circle cx="200" cy="195" r="14" fill="#131b2e" />
+                    <circle cx="200" cy="195" r="6" fill="#85f8c4" />
+                  </g>
+
+                  <!-- Indicador Flotante "Estás aquí" de Stitch -->
+                  <g id="gauge-indicator-badge" transform="translate(120, 20)">
+                    <rect x="0" y="0" width="160" height="30" rx="15" fill="#131b2e" filter="url(#shadow-drop)" />
+                    <text id="gauge-badge-text" x="80" y="19" font-family="'Outfit', sans-serif" font-size="12" font-weight="700" fill="#ffffff" text-anchor="middle">Estás aquí: --.-</text>
+                  </g>
+                </svg>
+
+                <!-- 4 Chips de Rangos de la OMS -->
+                <div class="who-legend-chips">
+                  <div class="legend-chip" id="chip-legend-underweight">
+                    <span class="chip-color bg-secondary"></span>
+                    <span>&lt; 18.5</span>
+                  </div>
+                  <div class="legend-chip" id="chip-legend-normal">
+                    <span class="chip-color bg-primary"></span>
+                    <span>18.5 - 24.9</span>
+                  </div>
+                  <div class="legend-chip" id="chip-legend-overweight">
+                    <span class="chip-color bg-tertiary"></span>
+                    <span>25.0 - 29.9</span>
+                  </div>
+                  <div class="legend-chip" id="chip-legend-obese">
+                    <span class="chip-color bg-error"></span>
+                    <span>≥ 30.0</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </section>
+
+        <!-- Fila de Auditoría y Recomendaciones Médicas (2 columnas) -->
+        <div class="results-detail-grid">
+          
+          <!-- Sub-Tarjeta 1: Auditoría Visual de IA -->
+          <article class="sub-card" aria-label="Auditoría visual de inferencia">
+            <div class="sub-card-header">
+              <span class="material-symbols-outlined" style="color: var(--color-primary); font-size: 22px;">biometrics</span>
+              <h3>Auditoría Visual de Inteligencia Artificial</h3>
+            </div>
+
+            <div class="audit-visual-row">
+              <div class="audit-img-wrapper">
+                <img id="audit-orig-img" src="" alt="Captura frontal completa" loading="lazy">
+                <span class="audit-img-caption">Captura Original</span>
+              </div>
+              <div class="audit-img-wrapper">
+                <img id="audit-crop-img" src="" alt="Segmentación de torso anatómico" loading="lazy">
+                <span class="audit-img-caption">Torso Segmentado</span>
+              </div>
+            </div>
+
+            <ul class="audit-specs-list">
+              <li>
+                <span style="color: var(--text-outline);">Alineación Postural:</span>
+                <strong id="audit-posture-val">Erguida (Validada)</strong>
+              </li>
+              <li>
+                <span style="color: var(--text-outline);">Motor de Segmentación:</span>
+                <strong>MediaPipe Pose (33 Landmarks)</strong>
+              </li>
+              <li>
+                <span style="color: var(--text-outline);">Aceleración de Inferencia:</span>
+                <strong id="audit-device-val">Aceleración por Hardware</strong>
+              </li>
+            </ul>
+          </article>
+
+          <!-- Sub-Tarjeta 2: Recomendaciones y Riesgo de Salud -->
+          <article class="sub-card" aria-label="Recomendaciones clínicas y de estilo de vida">
+            <div class="sub-card-header">
+              <span class="material-symbols-outlined" style="color: var(--color-primary); font-size: 22px;">clinical_notes</span>
+              <h3>Evaluación Clínica y Recomendaciones</h3>
+            </div>
+
+            <div id="risk-status-box" class="risk-status-box">
+              <span class="material-symbols-outlined">shield_with_heart</span>
+              <span id="risk-status-text">Riesgo cardiovascular estimado: Bajo</span>
+            </div>
+
+            <p id="risk-advice-text" class="advice-paragraph">
+              Mantener un patrón alimenticio balanceado rico en vegetales y fuentes proteicas magras, complementado con 150 minutos semanales de actividad física aeróbica moderada.
+            </p>
+
+            <p style="font-size: 0.78rem; color: var(--text-outline); line-height: 1.4;">
+              * Esta estimación está fundamentada en el análisis morfométrico por visión artificial y no sustituye una consulta médica presencial con bioimpedanciometría clínica.
+            </p>
+          </article>
+
+        </div>
+
+        <!-- Botones de Acción del Reporte -->
+        <div class="action-footer-buttons">
+          <a href="../index.html" class="btn btn-secondary" id="btn-re-measure">
+            <span class="material-symbols-outlined">restart_alt</span>
+            <span>Realizar Otra Medición</span>
+          </a>
+          <button type="button" class="btn btn-primary" id="btn-export-pdf">
+            <span class="material-symbols-outlined">print</span>
+            <span>Exportar Informe Clínico</span>
+          </button>
+        </div>
+
+      </div>
+    </div>
+  </main>
+
+  <!-- Scripts Modulares -->
+  <script src="../js/utils/storage.js"></script>
+  <script src="../js/utils/formatters.js"></script>
+  <script src="../js/services/api.service.js"></script>
+  <script src="../js/components/gauge.component.js"></script>
+  <script src="../js/results.js"></script>
+</body>
+</html>

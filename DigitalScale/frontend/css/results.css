@@ -1,0 +1,379 @@
+/* ==========================================================================
+   DIGITALSCALE AI - ESTILOS DEL DASHBOARD DE RESULTADOS (results.css)
+   Diseño Stitch de Pantalla 2: Velocímetro SVG, Auditoría Visual y Recomendaciones.
+   ========================================================================== */
+
+.results-dashboard-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+/* Tarjeta Hero Principal */
+.hero-result-card {
+  background: var(--bg-surface-lowest);
+  border-radius: var(--radius-xl);
+  padding: 2.25rem 2.5rem;
+  box-shadow: var(--shadow-card);
+  border: var(--border-subtle);
+  position: relative;
+  overflow: hidden;
+}
+
+.hero-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.75rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.hero-title-group {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+}
+
+.hero-icon-box {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-md);
+  background: var(--color-primary-container);
+  color: var(--color-on-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.hero-meta-label {
+  font-family: var(--font-display);
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-outline);
+}
+
+.hero-main-title {
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+/* Grid de Métricas y Velocímetro (5:7) */
+.hero-body-grid {
+  display: grid;
+  grid-template-columns: 5fr 7fr;
+  gap: 2.5rem;
+  align-items: center;
+}
+
+@media (max-width: 960px) {
+  .hero-body-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.metrics-column {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.metric-sub-label {
+  font-family: var(--font-display);
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-outline);
+}
+
+.metric-number-row {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+
+.bmi-value {
+  font-family: var(--font-display);
+  font-size: 3.8rem;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  color: var(--text-on-surface);
+}
+
+.bmi-unit {
+  font-family: var(--font-display);
+  font-size: 1.35rem;
+  font-weight: 600;
+  color: var(--text-outline);
+}
+
+/* Chips de Estado OMS */
+.who-chip-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.45rem 1.1rem;
+  border-radius: var(--radius-full);
+  align-self: flex-start;
+  font-family: var(--font-display);
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  border: 1px solid transparent;
+}
+.who-chip-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.who-chip-status.normal {
+  background: rgba(0, 105, 72, 0.1);
+  color: var(--color-primary);
+  border-color: rgba(0, 105, 72, 0.25);
+}
+.who-chip-status.underweight {
+  background: rgba(0, 99, 152, 0.1);
+  color: var(--color-secondary);
+  border-color: rgba(0, 99, 152, 0.25);
+}
+.who-chip-status.overweight {
+  background: rgba(141, 75, 0, 0.1);
+  color: var(--color-tertiary);
+  border-color: rgba(141, 75, 0, 0.25);
+}
+.who-chip-status.obese {
+  background: rgba(186, 26, 26, 0.1);
+  color: var(--color-error);
+  border-color: rgba(186, 26, 26, 0.25);
+}
+
+.diagnosis-lead-text {
+  font-size: 0.95rem;
+  line-height: 1.6;
+  color: var(--text-on-surface);
+}
+
+.secondary-estimates-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+}
+
+.estimate-box {
+  padding: 0.85rem 1rem;
+  border-radius: var(--radius-md);
+  background: var(--bg-surface-low);
+  border: var(--border-subtle);
+  display: flex;
+  flex-direction: column;
+}
+
+.estimate-label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: var(--text-outline);
+}
+
+.estimate-val {
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+/* Velocímetro SVG de Stitch */
+.gauge-column {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 1.75rem;
+  background: rgba(242, 243, 255, 0.55);
+  border-radius: var(--radius-xl);
+  border: var(--border-subtle);
+}
+
+.gauge-container {
+  width: 100%;
+  max-width: 440px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.gauge-svg {
+  width: 100%;
+  height: auto;
+}
+
+.who-legend-chips {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.5rem;
+  width: 100%;
+  margin-top: 1rem;
+}
+
+.legend-chip {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  padding: 0.45rem 0.5rem;
+  border-radius: var(--radius-sm);
+  background: var(--bg-surface-lowest);
+  border: 1px solid #e2e8f0;
+  font-size: 0.75rem;
+  font-weight: 600;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+}
+
+.legend-chip.active-chip {
+  border-color: rgba(0, 105, 72, 0.35);
+  background: rgba(0, 105, 72, 0.08);
+  color: var(--color-primary);
+}
+
+.chip-color {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+.bg-secondary { background: var(--color-secondary); }
+.bg-primary { background: var(--color-primary); }
+.bg-tertiary { background: var(--color-tertiary); }
+.bg-error { background: var(--color-error); }
+
+/* Fila de Auditoría y Recomendaciones */
+.results-detail-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+}
+
+@media (max-width: 860px) {
+  .results-detail-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.sub-card {
+  background: var(--bg-surface-lowest);
+  border-radius: var(--radius-xl);
+  padding: 1.5rem;
+  border: var(--border-subtle);
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.sub-card-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding-bottom: 0.6rem;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.sub-card-header h3 {
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+
+.audit-visual-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  gap: 1rem;
+  padding: 0.5rem 0;
+}
+
+.audit-img-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.audit-img-wrapper img {
+  width: 120px;
+  height: 120px;
+  object-fit: cover;
+  border-radius: var(--radius-md);
+  border: 1px solid #cbd5e1;
+  background: var(--bg-surface-low);
+}
+
+.audit-img-caption {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text-on-surface-variant);
+}
+
+.audit-specs-list {
+  list-style: none;
+  font-size: 0.82rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+.audit-specs-list li {
+  display: flex;
+  justify-content: space-between;
+}
+
+.advice-paragraph {
+  font-size: 0.9rem;
+  line-height: 1.55;
+  color: var(--text-on-surface);
+}
+
+.risk-status-box {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius-md);
+  background: var(--bg-surface-low);
+  border: var(--border-subtle);
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--color-primary);
+}
+
+.action-footer-buttons {
+  margin-top: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+/* --------------------------------------------------------------------------
+   ESTILOS DE IMPRESIÓN CLÍNICA
+   -------------------------------------------------------------------------- */
+@media print {
+  body {
+    background: #ffffff;
+    font-size: 11pt;
+  }
+  .app-header, .action-footer-buttons, #btn-re-measure {
+    display: none !important;
+  }
+  .hero-result-card, .sub-card {
+    box-shadow: none !important;
+    border: 1px solid #cbd5e1 !important;
+    break-inside: avoid;
+  }
+}

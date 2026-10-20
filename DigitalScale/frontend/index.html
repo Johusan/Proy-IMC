@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DigitalScale AI - Escáner Biométrico en Tiempo Real</title>
+  <meta name="description" content="Estimación de Índice de Masa Corporal (IMC) y análisis postural clínico en tiempo real mediante visión computacional y modelos profundos.">
+
+  <!-- Tipografías de Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;600;700;800&family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap" rel="stylesheet">
+
+  <!-- Estilos CSS -->
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/scanner.css">
+
+  <!-- MediaPipe Pose Web CDN para detección de puntos de movimiento -->
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose@0.5.1675469404/pose.js" crossorigin="anonymous"></script>
+</head>
+<body>
+
+  <!-- Cabecera Clínica Sticky -->
+  <header class="app-header">
+    <div class="header-inner">
+      <div class="brand-group">
+        <div class="brand-logo-box">
+          <span class="material-symbols-outlined" style="font-size: 26px;">monitor_weight</span>
+        </div>
+        <div>
+          <h1 class="brand-title">Digital<span>Scale</span> AI</h1>
+          <p class="brand-subtitle">Escáner Biométrico Clínico</p>
+        </div>
+      </div>
+
+      <!-- Navegación por Pantallas -->
+      <nav class="header-nav" aria-label="Navegación principal">
+        <a href="index.html" class="nav-pill active" id="nav-btn-scanner">
+          <span class="material-symbols-outlined" style="font-size: 18px;">videocam</span>
+          <span>Escáner en Vivo</span>
+        </a>
+        <a href="pages/results.html" class="nav-pill disabled" id="nav-btn-results">
+          <span class="material-symbols-outlined" style="font-size: 18px;">analytics</span>
+          <span>Resultados Clínicos</span>
+        </a>
+      </nav>
+
+      <!-- Estado de Telemetría del Servidor/GPU -->
+      <div class="header-actions">
+        <div class="telemetry-badge online" id="telemetry-badge" title="Verificando conexión con el motor de IA...">
+          <span class="material-symbols-outlined" style="font-size: 16px;">memory</span>
+          <span id="telemetry-text">Conectando...</span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Contenido Principal: Pantalla de Escaneo (Diseño Stitch 7:5) -->
+  <main class="main-content">
+    <div class="container-inner">
+      <div class="scanner-grid">
+        
+        <!-- Columna Izquierda (7 cols): Visor de Cámara con Puntos de Movimiento y HUD -->
+        <section class="viewport-column" aria-label="Visor biométrico en tiempo real">
+          <div class="camera-card">
+            <div class="camera-viewport-container">
+              <!-- Elemento de video WebRTC (reflejado en CSS) -->
+              <video id="video-stream" class="video-stream" autoplay playsinline muted></video>
+
+              <!-- Canvas superpuesto para los 33 puntos de movimiento de MediaPipe -->
+              <canvas id="hud-canvas" class="hud-canvas"></canvas>
+
+              <!-- Destello visual de obturación al capturar -->
+              <div id="capture-flash" class="capture-flash"></div>
+
+              <!-- Anillo SVG de Cuenta Regresiva Inteligente de 3 Segundos -->
+              <div id="countdown-overlay" class="countdown-overlay">
+                <div class="countdown-ring-wrapper">
+                  <svg class="countdown-svg" viewBox="0 0 120 120">
+                    <circle class="countdown-bg-ring" cx="60" cy="60" r="50"></circle>
+                    <circle id="countdown-progress" class="countdown-prog-ring" cx="60" cy="60" r="50"></circle>
+                  </svg>
+                  <div class="countdown-inner-content">
+                    <span id="countdown-number" class="countdown-val">3</span>
+                    <span style="font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 700;">Segundos</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Píldora Flotante Inferior de Instrucciones y Postura -->
+              <div id="hud-pill" class="hud-floating-pill">
+                <span class="pill-dot">●</span>
+                <span id="hud-message">Iniciando cámara y MediaPipe...</span>
+              </div>
+            </div>
+
+            <!-- Botones de Acción de Cámara -->
+            <div class="camera-actions-row">
+              <button id="btn-manual-capture" class="btn btn-primary" type="button">
+                <span class="material-symbols-outlined">photo_camera</span>
+                <span>Capturar Ahora</span>
+              </button>
+              <button id="btn-switch-camera" class="btn btn-secondary" type="button">
+                <span class="material-symbols-outlined">flip_camera_ios</span>
+                <span>Cambiar Cámara</span>
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <!-- Columna Derecha (5 cols): Guía Anatómica en 3 Pasos (Diseño Stitch) -->
+        <aside class="guidance-column" aria-label="Instrucciones de posicionamiento">
+          <div class="guidance-card">
+            <div class="guidance-header">
+              <span class="material-symbols-outlined" style="color: var(--color-primary); font-size: 26px;">accessibility_new</span>
+              <h2>Protocolo de Captura</h2>
+            </div>
+
+            <div class="steps-list">
+              <!-- Paso 1 -->
+              <div class="step-card">
+                <div class="step-number">1</div>
+                <div class="step-body">
+                  <div class="step-headline">
+                    <span class="material-symbols-outlined step-ico">straighten</span>
+                    <h3>Distancia Recomendada</h3>
+                  </div>
+                  <p>Sitúese a aproximadamente <strong>1.5 a 2.0 metros</strong> de la lente para encuadrar torso y caderas de cuerpo entero.</p>
+                </div>
+              </div>
+
+              <!-- Paso 2 -->
+              <div class="step-card">
+                <div class="step-number">2</div>
+                <div class="step-body">
+                  <div class="step-headline">
+                    <span class="material-symbols-outlined step-ico">sensor_occupied</span>
+                    <h3>Postura y Detección en Vivo</h3>
+                  </div>
+                  <p>Permanezca de pie con la espalda erguida. Los <strong>puntos de movimiento</strong> verdes y azules confirmarán su alineación en tiempo real.</p>
+                </div>
+              </div>
+
+              <!-- Paso 3 -->
+              <div class="step-card">
+                <div class="step-number">3</div>
+                <div class="step-body">
+                  <div class="step-headline">
+                    <span class="material-symbols-outlined step-ico">timer</span>
+                    <h3>Disparo Automático (3s)</h3>
+                  </div>
+                  <p>Al mantener la postura estable, se activará el anillo de <strong>3 segundos</strong> para realizar la captura sin necesidad de presionar ningún botón.</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Banner de Certificación Clínica -->
+            <div class="medical-assurance-banner">
+              <div class="assurance-icon">
+                <span class="material-symbols-outlined" style="font-size: 20px;">verified</span>
+              </div>
+              <p>Inferencia biométrica acelerada por hardware y red neuronal profunda según estándares de evaluación de la OMS.</p>
+            </div>
+          </div>
+        </aside>
+
+      </div>
+    </div>
+  </main>
+
+  <!-- Modal de Carga: Inferencia en GPU -->
+  <div id="loading-modal" class="loading-modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="loading-title">
+    <div class="loading-card">
+      <div class="loading-spinner"></div>
+      <h3 id="loading-title" class="loading-title">Procesando Biometría</h3>
+      <p class="loading-desc">Extrayendo torso anatómico y calculando Índice de Masa Corporal con redes neuronales...</p>
+    </div>
+  </div>
+
+  <!-- Scripts Modulares -->
+  <script src="js/utils/storage.js"></script>
+  <script src="js/utils/formatters.js"></script>
+  <script src="js/services/api.service.js"></script>
+  <script src="js/services/camera.service.js"></script>
+  <script src="js/components/hud.component.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>

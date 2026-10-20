@@ -20,12 +20,17 @@ if PROJECT_ROOT not in sys.path:
     sys.path.append(PROJECT_ROOT)
 if os.path.join(PROJECT_ROOT, "DigitalScale") not in sys.path:
     sys.path.append(os.path.join(PROJECT_ROOT, "DigitalScale"))
+if os.path.join(PROJECT_ROOT, "DigitalScale", "backend") not in sys.path:
+    sys.path.append(os.path.join(PROJECT_ROOT, "DigitalScale", "backend"))
 
-# Import SE-DenseNet from DigitalScale
+# Import SE-DenseNet from DigitalScale (supporting both backend/src and src)
 try:
-    from DigitalScale.src.models.densenet.densenet import SEDensenet121, load_pretrained_densenet
+    from DigitalScale.backend.src.models.densenet.densenet import SEDensenet121, load_pretrained_densenet
 except ImportError:
-    from src.models.densenet.densenet import SEDensenet121, load_pretrained_densenet
+    try:
+        from DigitalScale.src.models.densenet.densenet import SEDensenet121, load_pretrained_densenet
+    except ImportError:
+        from src.models.densenet.densenet import SEDensenet121, load_pretrained_densenet
 
 IMG_MEAN = [0.485, 0.456, 0.406]
 IMG_STD = [0.229, 0.224, 0.225]

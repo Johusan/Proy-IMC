@@ -128,3 +128,35 @@ The `src/scripts/` directory contains various Python scripts for different aspec
 | [`keypoints_forwardpass.py`](src/scripts/keypoints_forwardpass.py) | Performs keypoint detection on images to extract human pose information for posture analysis |
 | [`calculate_bbox_area_ratio.py`](src/scripts/calculate_bbox_area_ratio.py) | Calculates the area ratio of detected bounding boxes relative to image size for quality assessment |
 
+---
+
+## DigitalScale AI - Servidor Web y Demostración en Vivo
+
+### 1. Instalación de Dependencias del Servidor
+Para instalar las dependencias requeridas para el servidor FastAPI y la inferencia:
+```bash
+pip install -r backend/requirements-server.txt
+```
+
+### 2. Configuración Opcional (.env)
+Copie la plantilla de variables de entorno si desea cambiar el puerto o configuración:
+```bash
+copy .env.example .env
+```
+
+### 3. Iniciar el Servidor Web
+Ejecute el servidor desde la raíz del proyecto:
+- En Windows (automático): ejecutar `iniciar_servidor.bat`
+- O por consola:
+```bash
+python server.py
+```
+La interfaz web se iniciará en `http://localhost:8000` y la documentación interactiva en `http://localhost:8000/docs`.
+
+### 4. Demostración en Vivo con Python (Herramienta de Prueba)
+Para probar la captura y estimación directamente en OpenCV:
+```bash
+cd backend
+python webcam_demo.py
+```
+

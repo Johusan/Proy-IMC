@@ -1,0 +1,302 @@
+/* ==========================================================================
+   DIGITALSCALE AI - ESTILOS DE LA PANTALLA DE ESCANEO (scanner.css)
+   Diseño Stitch de Pantalla 1: Visor Biométrico 7:5 y Guía Anatómica en 3 Pasos.
+   ========================================================================== */
+
+.scanner-grid {
+  display: grid;
+  grid-template-columns: 7fr 5fr;
+  gap: 2rem;
+  align-items: start;
+}
+
+@media (max-width: 1024px) {
+  .scanner-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.viewport-column, .guidance-column {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.camera-card {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+/* Visor de Cámara y Canvas */
+.camera-viewport-container {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 11;
+  background: #0c0e14;
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+  box-shadow: var(--shadow-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.video-stream {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform: scaleX(-1); /* Efecto espejo */
+  display: block;
+}
+
+.hud-canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.capture-flash {
+  position: absolute;
+  inset: 0;
+  background: #ffffff;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease-out;
+  z-index: 30;
+}
+.capture-flash.active {
+  opacity: 0.9;
+  transition: opacity 0.05s ease-in;
+}
+
+/* Anillo SVG de Cuenta Regresiva de 3 Segundos de Stitch */
+.countdown-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  z-index: 20;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+.countdown-overlay.visible {
+  opacity: 1;
+}
+
+.countdown-ring-wrapper {
+  position: relative;
+  width: 140px;
+  height: 140px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.countdown-svg {
+  width: 140px;
+  height: 140px;
+}
+
+.countdown-bg-ring {
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.45);
+  stroke-width: 6;
+}
+
+.countdown-prog-ring {
+  fill: none;
+  stroke: var(--color-primary-fixed);
+  stroke-width: 6;
+  stroke-linecap: round;
+  stroke-dasharray: 314.16; /* 2 * PI * 50 */
+  stroke-dashoffset: 0;
+  transition: stroke-dashoffset 0.8s linear;
+}
+
+.countdown-inner-content {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
+}
+
+.countdown-val {
+  font-family: var(--font-display);
+  font-size: 2.2rem;
+  font-weight: 800;
+  line-height: 1;
+  color: #ffffff;
+}
+
+/* Píldora Flotante Inferior de Instrucciones y Alertas */
+.hud-floating-pill {
+  position: absolute;
+  bottom: 18px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(255, 255, 255, 0.94);
+  backdrop-filter: blur(12px);
+  padding: 0.55rem 1.35rem;
+  border-radius: var(--radius-full);
+  border: 1px solid rgba(188, 202, 192, 0.5);
+  box-shadow: var(--shadow-md);
+  color: var(--text-on-surface);
+  font-size: 0.88rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 25;
+}
+
+.pill-dot {
+  color: var(--color-primary);
+  font-size: 0.8rem;
+}
+
+.hud-floating-pill.alert {
+  background: rgba(141, 75, 0, 0.95);
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.3);
+}
+.hud-floating-pill.alert .pill-dot {
+  color: #ffffff;
+}
+
+/* Barra de Acciones de Cámara */
+.camera-actions-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+/* Tarjeta de Guía en 3 Pasos (Stitch) */
+.guidance-card {
+  background: var(--bg-surface-lowest);
+  border-radius: var(--radius-xl);
+  padding: 1.75rem 2rem;
+  border: var(--border-subtle);
+  box-shadow: var(--shadow-card);
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.guidance-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.guidance-header h2 {
+  font-family: var(--font-display);
+  font-size: 1.2rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.steps-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.step-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.9rem;
+  padding: 0.9rem 1rem;
+  border-radius: var(--radius-md);
+  background: rgba(242, 243, 255, 0.7);
+  border: var(--border-subtle);
+  transition: all 0.2s ease;
+}
+.step-card:hover {
+  border-color: rgba(0, 105, 72, 0.35);
+  background: rgba(242, 243, 255, 0.95);
+}
+
+.step-number {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 0.95rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.step-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.step-headline {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.step-headline h3 {
+  font-family: var(--font-display);
+  font-size: 0.92rem;
+  font-weight: 700;
+}
+
+.step-ico {
+  font-size: 18px;
+  color: var(--color-primary);
+}
+
+.step-body p {
+  font-size: 0.82rem;
+  color: var(--text-on-surface-variant);
+  line-height: 1.45;
+}
+
+.medical-assurance-banner {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.85rem 1rem;
+  background: var(--bg-surface-low);
+  border: var(--border-subtle);
+  border-radius: var(--radius-md);
+}
+
+.assurance-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: var(--radius-sm);
+  background: rgba(0, 105, 72, 0.08);
+  color: var(--color-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.medical-assurance-banner p {
+  font-size: 0.82rem;
+  color: var(--text-on-surface-variant);
+}

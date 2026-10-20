@@ -7,13 +7,17 @@ CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_ROOT = os.path.abspath(os.path.join(CURRENT_DIR, ".."))
 if PROJECT_ROOT not in sys.path:
     sys.path.append(PROJECT_ROOT)
-if os.path.join(PROJECT_ROOT, "DigitalScale") not in sys.path:
-    sys.path.append(os.path.join(PROJECT_ROOT, "DigitalScale"))
+for p in [os.path.join(PROJECT_ROOT, "DigitalScale", "backend"), os.path.join(PROJECT_ROOT, "DigitalScale")]:
+    if p not in sys.path:
+        sys.path.append(p)
 
 try:
-    from DigitalScale.src.models.densenet.densenet import SEDensenet121
+    from DigitalScale.backend.src.models.densenet.densenet import SEDensenet121
 except ImportError:
-    from src.models.densenet.densenet import SEDensenet121
+    try:
+        from DigitalScale.src.models.densenet.densenet import SEDensenet121
+    except ImportError:
+        from src.models.densenet.densenet import SEDensenet121
 
 def export_checkpoint():
     print("=" * 60)
@@ -27,8 +31,8 @@ def export_checkpoint():
         return
 
     # Define target destinations
-    target_weights_dir = os.path.abspath(os.path.join(PROJECT_ROOT, "DigitalScale", "weights"))
-    target_model5_dir = os.path.abspath(os.path.join(PROJECT_ROOT, "DigitalScale", "trained_models", "model_5"))
+    target_weights_dir = os.path.abspath(os.path.join(PROJECT_ROOT, "DigitalScale", "backend", "weights"))
+    target_model5_dir = os.path.abspath(os.path.join(PROJECT_ROOT, "DigitalScale", "backend", "trained_models", "model_5"))
 
     os.makedirs(target_weights_dir, exist_ok=True)
     os.makedirs(target_model5_dir, exist_ok=True)
