@@ -54,7 +54,10 @@ def export_checkpoint():
     device = torch.device("cpu")
     model = SEDensenet121()
     
-    checkpoint = torch.load(dest_ckpt_1, map_location=device)
+    try:
+        checkpoint = torch.load(dest_ckpt_1, map_location=device, weights_only=False)
+    except TypeError:
+        checkpoint = torch.load(dest_ckpt_1, map_location=device)
     state_dict = checkpoint["state_dict"] if "state_dict" in checkpoint else checkpoint
     model.load_state_dict(state_dict)
     model.eval()

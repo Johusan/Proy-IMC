@@ -10,20 +10,18 @@ import torch.optim as optim
 from torch.utils.data import Dataset, DataLoader
 from torchvision import transforms
 
-# Force unbuffered stdout for live logging
+# Forzar salida en consola sin buffer para ver el progreso en tiempo real
 sys.stdout.reconfigure(line_buffering=True)
 
-# Add root projects directory to PYTHONPATH to import DigitalScale modules
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_ROOT = os.path.abspath(os.path.join(CURRENT_DIR, ".."))
 if PROJECT_ROOT not in sys.path:
     sys.path.append(PROJECT_ROOT)
-if os.path.join(PROJECT_ROOT, "DigitalScale") not in sys.path:
-    sys.path.append(os.path.join(PROJECT_ROOT, "DigitalScale"))
-if os.path.join(PROJECT_ROOT, "DigitalScale", "backend") not in sys.path:
-    sys.path.append(os.path.join(PROJECT_ROOT, "DigitalScale", "backend"))
+for p in [os.path.join(PROJECT_ROOT, "DigitalScale"), os.path.join(PROJECT_ROOT, "DigitalScale", "backend")]:
+    if p not in sys.path:
+        sys.path.append(p)
 
-# Import SE-DenseNet from DigitalScale (supporting both backend/src and src)
+# Importar arquitectura SE-DenseNet-121
 try:
     from DigitalScale.backend.src.models.densenet.densenet import SEDensenet121, load_pretrained_densenet
 except ImportError:
@@ -36,7 +34,32 @@ IMG_MEAN = [0.485, 0.456, 0.406]
 IMG_STD = [0.229, 0.224, 0.225]
 IMG_SIZE = 224
 
-class CustomBMIDataset(Dataset):
+
+class _ResizeKeepAspect(transforms.Resize):
+    """
+    Redimensiona la imagen preservando su relación de aspecto original,
+    escalando por el lado mayor hasta IMG_SIZE.
+    Evita la deformación anatómica de cuerpos humanos.
+    """
+    def __call__(self, img):
+        if hasattr(img, 'size'):
+            w, h = img.size
+        elif hasattr(img, 'shape'):
+            h, w = img.shape[-2], img.shape[-1]
+        else:
+            return super().__call__(img)
+
+        scale = max(w, h) / float(self.size)
+        new_w = max(1, int(w / scale))
+        new_h = max(1, int(h / scale))
+        return transforms.functional.resize(img, (new_h, new_w), self.interpolation)
+
+
+class TorsoBMIDataset(Dataset):
+    """
+    Dataset especializado en recortes anatómicos de torso
+    con las mismas transformaciones de entrada que el servidor web.
+    """
     def __init__(self, df, transform=None):
         self.df = df.reset_index(drop=True)
         self.transform = transform
@@ -46,128 +69,139 @@ class CustomBMIDataset(Dataset):
 
     def __getitem__(self, idx):
         row = self.df.iloc[idx]
-        # Fallback to local Image Dataset if path from CSV belongs to another machine
+        image_path = row.get("cropped_photo_path", "")
+
+        # Respaldo si no existe la ruta guardada
         if not os.path.exists(image_path):
-            filename = str(row['image_id']).strip()
-            folder = "Image_train" if row['partition'] in ['train', 'val'] else "Image_test"
-            alt_path = os.path.join(CURRENT_DIR, "Image Dataset", folder, filename)
-            if os.path.exists(alt_path):
-                image_path = alt_path
-            else:
-                # Check extension swap (.jpg <-> .png)
-                base_name, _ = os.path.splitext(filename)
-                for ext in [".jpg", ".png"]:
-                    candidate = os.path.join(CURRENT_DIR, "Image Dataset", folder, base_name + ext)
-                    if os.path.exists(candidate):
-                        image_path = candidate
-                        break
-        
+            image_path = row.get("photo_path", "")
+
         try:
-            image = Image.open(image_path).convert('RGB')
+            image = Image.open(image_path).convert("RGB")
         except Exception:
-            # Fallback black image if corrupted or missing
-            image = Image.new('RGB', (IMG_SIZE, IMG_SIZE), (0, 0, 0))
-            
+            # Respaldo negro si estuviera corrupta
+            image = Image.new("RGB", (IMG_SIZE, IMG_SIZE), (0, 0, 0))
+
         if self.transform:
             image = self.transform(image)
         else:
             image = transforms.ToTensor()(image)
-            
+
+        bmi = float(row["bmi"])
         return image, torch.tensor(bmi, dtype=torch.float32)
 
-def train_model(epochs=20, batch_size=16, lr=1e-4):
-    print("=" * 60, flush=True)
-    print("DIGITAL SCALE - RTX 3050 HIGH PERFORMANCE TRAINING", flush=True)
-    print("=" * 60, flush=True)
-    
-    # 1. Device Setup
+
+def train_model(epochs=35, batch_size=16, lr=1e-4):
+    print("=" * 65, flush=True)
+    print("DIGITALSCALE AI — ENTRENAMIENTO DE PRECISIÓN (RTX 3050)", flush=True)
+    print("=" * 65, flush=True)
+
+    # 1. Verificación de Hardware (GPU)
     if torch.cuda.is_available():
         device = torch.device("cuda")
         gpu_name = torch.cuda.get_device_name(0)
-        print(f"GPU Acceleration Active: {gpu_name}", flush=True)
-        print(f"   CUDA Capability: {torch.cuda.get_device_capability(0)}", flush=True)
+        vram_gb = torch.cuda.get_device_properties(0).total_memory / (1024**3)
+        print(f"[GPU] Aceleración activa: {gpu_name} ({vram_gb:.1f} GB VRAM)", flush=True)
     else:
         device = torch.device("cpu")
-        print("CUDA not detected. Training will run on CPU.", flush=True)
+        print("[ADVERTENCIA] CUDA no detectado. El entrenamiento correrá en CPU.", flush=True)
 
-    # 2. Load Dataset CSV
-    dataset_csv = os.path.join(CURRENT_DIR, "unified_dataset.csv")
-    if not os.path.exists(dataset_csv):
-        print(f"Error: {dataset_csv} not found. Run dataset_adapter.py first.", flush=True)
-        return
+    # 2. Cargar Dataset con Recortes Anatómicos
+    torso_csv = os.path.join(CURRENT_DIR, "torso_unified_dataset.csv")
+    unified_csv = os.path.join(CURRENT_DIR, "unified_dataset.csv")
 
-    df = pd.read_csv(dataset_csv)
-    train_df = df[df['partition'] == 'train']
-    val_df = df[df['partition'] == 'val']
-    test_df = df[df['partition'] == 'test']
+    if not os.path.exists(torso_csv):
+        print(f"\n[INFO] No se encontró '{os.path.basename(torso_csv)}'.", flush=True)
+        print("Ejecutando preprocesador anatómico de torso con MediaPipe primero...", flush=True)
+        from preprocess_dataset import run_torso_preprocessing
+        run_torso_preprocessing()
 
-    print(f"\nDataset Split:", flush=True)
-    print(f"   Train samples: {len(train_df)}", flush=True)
-    print(f"   Val samples:   {len(val_df)}", flush=True)
-    print(f"   Test samples:  {len(test_df)}", flush=True)
+    if not os.path.exists(torso_csv):
+        if os.path.exists(unified_csv):
+            print(f"[AVISO] Usando dataset unificado sin recorte: {unified_csv}", flush=True)
+            df = pd.read_csv(unified_csv)
+        else:
+            print(f"Error fatal: No se encontró ningún dataset en {CURRENT_DIR}", flush=True)
+            return
+    else:
+        df = pd.read_csv(torso_csv)
 
-    # 3. Data Transformations
+    train_df = df[df["partition"] == "train"]
+    val_df = df[df["partition"] == "val"]
+    test_df = df[df["partition"] == "test"]
+
+    print(f"\nParticiones del Dataset:", flush=True)
+    print(f"   * Entrenamiento: {len(train_df):4d} imágenes", flush=True)
+    print(f"   * Validación:    {len(val_df):4d} imágenes", flush=True)
+    print(f"   * Prueba ciega:  {len(test_df):4d} imágenes", flush=True)
+
+    # 3. Pipeline de Transformaciones — ALINEACIÓN 100% CON PRODUCCIÓN
+    #    Usa ResizeKeepAspect -> Pad -> CenterCrop para mantener proporciones reales del cuerpo
     train_transforms = transforms.Compose([
-        transforms.Resize((IMG_SIZE, IMG_SIZE)),
+        _ResizeKeepAspect(IMG_SIZE),
+        transforms.Pad(IMG_SIZE),
+        transforms.CenterCrop(IMG_SIZE),
         transforms.RandomHorizontalFlip(p=0.5),
-        transforms.RandomRotation(degrees=10),
-        transforms.ColorJitter(brightness=0.1, contrast=0.1),
+        transforms.RandomRotation(degrees=6),
+        transforms.ColorJitter(brightness=0.10, contrast=0.10),
         transforms.ToTensor(),
-        transforms.Normalize(mean=IMG_MEAN, std=IMG_STD)
+        transforms.Normalize(mean=IMG_MEAN, std=IMG_STD),
     ])
 
-    val_transforms = transforms.Compose([
-        transforms.Resize((IMG_SIZE, IMG_SIZE)),
+    eval_transforms = transforms.Compose([
+        _ResizeKeepAspect(IMG_SIZE),
+        transforms.Pad(IMG_SIZE),
+        transforms.CenterCrop(IMG_SIZE),
         transforms.ToTensor(),
-        transforms.Normalize(mean=IMG_MEAN, std=IMG_STD)
+        transforms.Normalize(mean=IMG_MEAN, std=IMG_STD),
     ])
 
-    train_dataset = CustomBMIDataset(train_df, transform=train_transforms)
-    val_dataset = CustomBMIDataset(val_df, transform=val_transforms)
-    test_dataset = CustomBMIDataset(test_df, transform=val_transforms)
+    train_dataset = TorsoBMIDataset(train_df, transform=train_transforms)
+    val_dataset = TorsoBMIDataset(val_df, transform=eval_transforms)
+    test_dataset = TorsoBMIDataset(test_df, transform=eval_transforms)
 
-    # Use num_workers=0 on Windows for stability with PIL image decoding
-    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=0)
+    # num_workers=0 para máxima estabilidad en Windows
+    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=0, pin_memory=(device.type == "cuda"))
     val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False, num_workers=0)
     test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False, num_workers=0)
 
-    # 4. Model Setup
-    print("\nInitializing SE-DenseNet-121 Architecture...", flush=True)
+    # 4. Inicializar SE-DenseNet-121
+    print("\nInicializando arquitectura SE-DenseNet-121...", flush=True)
     model = SEDensenet121()
     load_pretrained_densenet(model)
     model.to(device)
 
-    # Disable memory efficient features for export compatibility
     for m in model.modules():
-        if hasattr(m, 'memory_efficient'):
+        if hasattr(m, "memory_efficient"):
             m.memory_efficient = False
 
-    criterion = nn.MSELoss().to(device)
-    optimizer = optim.Adam(model.parameters(), lr=lr, weight_decay=1e-4)
-    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=3)
-    scaler = torch.amp.GradScaler('cuda', enabled=(device.type == 'cuda'))
+    # Smooth L1 Loss (Huber Loss) es mucho más robusto contra outliers que MSE puro
+    criterion = nn.SmoothL1Loss(beta=1.0).to(device)
+    optimizer = optim.AdamW(model.parameters(), lr=lr, weight_decay=1e-4)
+    scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=epochs, eta_min=1e-6)
+    scaler = torch.amp.GradScaler("cuda", enabled=(device.type == "cuda"))
 
-    best_val_mae = float('inf')
-    best_val_mape = float('inf')
+    best_val_mae = float("inf")
+    best_val_mape = float("inf")
     output_dir = os.path.join(CURRENT_DIR, "output")
     os.makedirs(output_dir, exist_ok=True)
     best_ckpt_path = os.path.join(output_dir, "best_model.ckpt")
 
-    print("\nStarting Training Loop...", flush=True)
+    print(f"\nIniciando ciclo de entrenamiento ({epochs} épocas)...", flush=True)
+    print("-" * 65, flush=True)
     start_time = time.time()
 
     for epoch in range(1, epochs + 1):
-        # TRAIN EPOCH
+        # FASE DE ENTRENAMIENTO
         model.train()
         train_loss, train_mae = 0.0, 0.0
         train_count = 0
 
         for images, bmis in train_loader:
-            images = images.to(device)
-            bmis = bmis.to(device).unsqueeze(1)
-            
+            images = images.to(device, non_blocking=True)
+            bmis = bmis.to(device, non_blocking=True).unsqueeze(1)
+
             optimizer.zero_grad()
-            with torch.amp.autocast('cuda', enabled=(device.type == 'cuda')):
+            with torch.amp.autocast("cuda", enabled=(device.type == "cuda")):
                 outputs = model(images)
                 loss = criterion(outputs, bmis)
 
@@ -183,17 +217,17 @@ def train_model(epochs=20, batch_size=16, lr=1e-4):
         train_loss /= train_count
         train_mae /= train_count
 
-        # VALIDATION EPOCH
+        # FASE DE VALIDACIÓN
         model.eval()
         val_loss, val_mae, val_mape = 0.0, 0.0, 0.0
         val_count = 0
 
         with torch.no_grad():
             for images, bmis in val_loader:
-                images = images.to(device)
-                bmis = bmis.to(device).unsqueeze(1)
-                
-                with torch.amp.autocast('cuda', enabled=(device.type == 'cuda')):
+                images = images.to(device, non_blocking=True)
+                bmis = bmis.to(device, non_blocking=True).unsqueeze(1)
+
+                with torch.amp.autocast("cuda", enabled=(device.type == "cuda")):
                     outputs = model(images)
                     loss = criterion(outputs, bmis)
 
@@ -207,9 +241,10 @@ def train_model(epochs=20, batch_size=16, lr=1e-4):
         val_mae /= val_count
         val_mape = (val_mape / val_count) * 100.0
 
-        scheduler.step(val_loss)
+        scheduler.step()
+        curr_lr = optimizer.param_groups[0]["lr"]
 
-        # Check if best model
+        # Guardar si es el mejor modelo en validación
         is_best = val_mae < best_val_mae
         if is_best:
             best_val_mae = val_mae
@@ -222,22 +257,27 @@ def train_model(epochs=20, batch_size=16, lr=1e-4):
                 "optimizer": optimizer.state_dict(),
             }
             torch.save(checkpoint_state, best_ckpt_path)
-            best_str = " (BEST MODEL SAVED)"
+            best_flag = " ⭐ [MEJOR MODELO GUARDADO]"
         else:
-            best_str = ""
+            best_flag = ""
 
-        print(f"Epoch [{epoch:02d}/{epochs:02d}] | Train MAE: {train_mae:.2f} | Val Loss: {val_loss:.2f} | Val MAE: {val_mae:.2f} | Val MAPE: {val_mape:.2f}%{best_str}", flush=True)
+        print(
+            f"Época [{epoch:02d}/{epochs:02d}] (LR: {curr_lr:.1e}) | "
+            f"Train MAE: {train_mae:.2f} | "
+            f"Val MAE: {val_mae:.2f} kg/m² | Val MAPE: {val_mape:.2f}%{best_flag}",
+            flush=True,
+        )
 
-    elapsed = time.time() - start_time
-    print("-" * 60, flush=True)
-    print(f"Training Completed in {elapsed/60:.2f} minutes.", flush=True)
-    print(f"Best Validation MAE: {best_val_mae:.2f} kg/m2 | MAPE: {best_val_mape:.2f}%", flush=True)
-    print(f"Best Model Checkpoint: {best_ckpt_path}", flush=True)
+    total_min = (time.time() - start_time) / 60.0
+    print("=" * 65, flush=True)
+    print(f"Entrenamiento completado en {total_min:.2f} minutos.", flush=True)
+    print(f"Mejor MAE en Validación: {best_val_mae:.2f} kg/m² | MAPE: {best_val_mape:.2f}%", flush=True)
+    print(f"Archivo de pesos óptimo: {best_ckpt_path}", flush=True)
 
-    # TEST EVALUATION
-    print("\nEvaluating Best Model on Held-Out Test Set...", flush=True)
+    # 5. Evaluación en Prueba Ciega (Held-Out Test Set)
+    print("\nEvaluando en el conjunto de prueba independiente...", flush=True)
     if os.path.exists(best_ckpt_path):
-        checkpoint = torch.load(best_ckpt_path, map_location=device)
+        checkpoint = torch.load(best_ckpt_path, map_location=device, weights_only=False)
         model.load_state_dict(checkpoint["state_dict"])
         model.eval()
 
@@ -248,7 +288,7 @@ def train_model(epochs=20, batch_size=16, lr=1e-4):
                 images = images.to(device)
                 bmis = bmis.to(device).unsqueeze(1)
                 outputs = model(images)
-                
+
                 batch_size_curr = images.size(0)
                 test_mae += torch.sum(torch.abs(outputs - bmis)).item()
                 test_mape += torch.sum(torch.abs((outputs - bmis) / bmis)).item()
@@ -256,9 +296,12 @@ def train_model(epochs=20, batch_size=16, lr=1e-4):
 
         test_mae /= test_count
         test_mape = (test_mape / test_count) * 100.0
-        print(f"Test Set Metrics (N={test_count}):", flush=True)
-        print(f"   MAE:  {test_mae:.2f} kg/m2", flush=True)
-        print(f"   MAPE: {test_mape:.2f}%", flush=True)
+        print(f"Métricas finales en conjunto de prueba (N={test_count} imágenes):", flush=True)
+        print(f"   * MAE:  {test_mae:.2f} kg/m²", flush=True)
+        print(f"   * MAPE: {test_mape:.2f}%", flush=True)
+
+    print("\n[SIGUIENTE PASO] Ejecuta `python export_to_digitalscale.py` para sincronizar con la web.")
+
 
 if __name__ == "__main__":
-    train_model(epochs=20, batch_size=16, lr=1e-4)
+    train_model(epochs=35, batch_size=16, lr=1e-4)

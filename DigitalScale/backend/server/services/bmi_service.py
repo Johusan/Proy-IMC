@@ -74,6 +74,9 @@ class BMIPredictor:
             self.device = torch.device("cuda")
         else:
             self.device = torch.device("cpu")
+            # Optimización para CPUs ARM/x86 (ej. 4 núcleos Cortex-A76 en Raspberry Pi 5)
+            cpu_threads = min(4, os.cpu_count() or 4)
+            torch.set_num_threads(cpu_threads)
 
         # 2. Localizar archivo de pesos
         target_path = WEIGHTS_PATH

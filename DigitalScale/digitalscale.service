@@ -1,0 +1,17 @@
+[Unit]
+Description=DigitalScale AI - Servidor de Estimacion Biometrica de IMC
+After=network.target
+
+[Service]
+Type=simple
+User=pi
+WorkingDirectory=/home/pi/DigitalScale
+ExecStart=/home/pi/DigitalScale/venv/bin/python3 server.py
+Restart=always
+RestartSec=5
+Environment=PYTHONUNBUFFERED=1
+Environment=DIGITALSCALE_HOST=0.0.0.0
+Environment=DIGITALSCALE_PORT=8000
+
+[Install]
+WantedBy=multi-user.target
