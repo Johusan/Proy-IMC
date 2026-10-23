@@ -56,12 +56,22 @@ source "$SCRIPT_DIR/venv/bin/activate"
 # 4. Actualizar pip e instalar requerimientos
 echo ""
 echo "[4/5] Instalando dependencias de Python (PyTorch CPU, MediaPipe, FastAPI)..."
-pip install --upgrade pip setuptools wheel
+# Limpiar caché previa de pip para liberar espacio en disco
+pip cache purge 2>/dev/null || true
+
+pip install --no-cache-dir --upgrade pip setuptools wheel
+
+# Instalar PyTorch y torchvision versión CPU-only (¡CRÍTICO: evita descargar >3 GB de librerías NVIDIA CUDA!)
+echo ""
+echo "[INFO] Instalando PyTorch CPU y Torchvision para ARM64 (sin paquetes NVIDIA)..."
+pip install --no-cache-dir torch torchvision --index-url https://download.pytorch.org/whl/cpu
 
 # Instalar dependencias del servidor
 REQUIREMENTS_FILE="$SCRIPT_DIR/backend/requirements-server.txt"
 if [ -f "$REQUIREMENTS_FILE" ]; then
-    pip install -r "$REQUIREMENTS_FILE"
+    echo ""
+    echo "[INFO] Instalando dependencias del servidor FastAPI..."
+    pip install --no-cache-dir -r "$REQUIREMENTS_FILE"
 else
     echo "[ERROR] No se encontró $REQUIREMENTS_FILE"
     exit 1
