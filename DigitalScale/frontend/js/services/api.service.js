@@ -60,15 +60,19 @@ const ApiService = {
    *   message?: string
    * }>}
    */
-  async predictBMI(base64Image) {
+  async predictBMI(base64Input) {
     try {
+      const payload = Array.isArray(base64Input)
+        ? { images_base64: base64Input }
+        : { image_base64: base64Input };
+
       const response = await fetch(`${this.BASE_URL}/api/predict-base64`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json'
         },
-        body: JSON.stringify({ image_base64: base64Image })
+        body: JSON.stringify(payload)
       });
 
       if (!response.ok) {

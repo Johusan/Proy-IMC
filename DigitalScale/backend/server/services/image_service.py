@@ -115,6 +115,32 @@ class ImageProcessor:
         return pil_img.crop((final_x1, final_y1, final_x2, final_y2))
 
     @staticmethod
+    def get_clean_fullbody_crop(
+        pil_img: Image.Image,
+        bbox: Tuple[int, int, int, int],
+        img_w: int,
+        img_h: int,
+        margin_factor: float = 1.08
+    ) -> Image.Image:
+        """
+        Calcula y extrae un recorte centrado en el cuerpo completo de la persona,
+        aplicando un margen anatómico proporcional y acotándose a los límites del sensor.
+        """
+        x1, y1, x2, y2 = bbox
+        bw = max(10, x2 - x1)
+        bh = max(10, y2 - y1)
+
+        margin_x = int(bw * (margin_factor - 1.0) * 0.5)
+        margin_y = int(bh * (margin_factor - 1.0) * 0.5)
+
+        crop_x1 = max(0, x1 - margin_x)
+        crop_y1 = max(0, y1 - margin_y)
+        crop_x2 = min(img_w, x2 + margin_x)
+        crop_y2 = min(img_h, y2 + margin_y)
+
+        return pil_img.crop((crop_x1, crop_y1, crop_x2, crop_y2))
+
+    @staticmethod
     def image_to_base64(pil_img: Image.Image, quality: int = 85) -> str:
         """
         Convierte una imagen PIL a formato Data URI Base64 (data:image/jpeg;base64,...)

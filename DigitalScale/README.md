@@ -160,3 +160,43 @@ cd backend
 python webcam_demo.py
 ```
 
+---
+
+## 🔬 Auditoría Científica y Documentación de Investigación
+
+El proyecto cuenta con un marco de reproducibilidad científica exhaustivo tras la auditoría técnica profunda:
+
+| Documento Técnico / Científico | Ubicación | Descripción |
+| :--- | :--- | :--- |
+| **Plan de Implementación de Precisión** | [`documents/Plan_Implementacion_Precision_DigitalScale.md`](../documents/Plan_Implementacion_Precision_DigitalScale.md) | Diagnóstico validado, arquitectura SE-DenseNet-121, alternativas descartadas y criterios de aceptación. |
+| **Protocolo de Entrenamiento y Evaluación** | [`documents/Protocolo_Entrenamiento_Evaluacion_DigitalScale.md`](../documents/Protocolo_Entrenamiento_Evaluacion_DigitalScale.md) | Preparación de datos, partición estricta por sujeto (sin fuga), funciones de pérdida e hiperparámetros. |
+| **Resultados Experimentales y Métricas** | [`documents/Resultados_Experimentos_DigitalScale.md`](../documents/Resultados_Experimentos_DigitalScale.md) | Métricas reales medidas en test set (MAE 3.96 kg/m², MedAE 2.83 kg/m², TTA 4x y estudio de repetibilidad). |
+| **Guía de Captura y Protocolo de Usuario** | [`documents/Guia_Captura_Usuario_DigitalScale.md`](../documents/Guia_Captura_Usuario_DigitalScale.md) | Protocolo de distancia (2.0 - 2.4m), relación de aspecto, iluminación, vestimenta y mensajes HUD. |
+
+---
+
+## 🧪 Pruebas Automatizadas y Reproducibilidad
+
+### 1. Ejecutar Suite de Tests Automatizados
+Para verificar la integridad del pipeline de inferencia, transformaciones de aspecto, modelos de clustering y reglas de rechazo:
+```bash
+python backend/tests/test_precision_pipeline.py -v
+```
+
+### 2. Reproducir la Evaluación Experimental Independiente
+Para calcular las métricas sobre el conjunto de prueba independiente ($N = 878$ muestras):
+```bash
+python C:\Users\jhonh\.gemini\antigravity-ide\brain\0a5a5213-54e0-42af-83c8-af5e70911eff\scratch\evaluate_precision.py
+```
+
+### 3. Pipeline de Entrenamiento en GPU (RTX 3050)
+```bash
+cd ../Entrenar_Data
+# 1. Preprocesamiento anatómico con MediaPipe
+python preprocess_dataset.py
+# 2. Entrenamiento con Smooth L1 Loss y data augmentation anatómica
+python train_rtx3050.py
+# 3. Exportación del mejor checkpoint a producción
+python export_to_digitalscale.py
+```
+

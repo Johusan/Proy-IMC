@@ -31,4 +31,6 @@ class PredictionResponse(BaseModel):
     is_valid_pose: bool = Field(..., description="Indica si la postura fue adecuada para la medición")
     posture_status: str = Field(..., description="Descripción del estado de postura y encuadre")
     cropped_torso_base64: Optional[str] = Field(None, description="Miniatura del torso recortado en formato Base64")
+    intra_std: Optional[float] = Field(None, description="Desviación estándar de predicción intra-sujeto en ráfaga (kg/m²)")
+    frames_analyzed: Optional[int] = Field(1, description="Número de fotogramas analizados en la medición")
     message: Optional[str] = Field(None, description="Mensaje explicativo del resultado o advertencias")

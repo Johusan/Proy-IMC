@@ -2,7 +2,18 @@
 # DIGITAL SCALE - GITIGNORE CONFIGURATION
 # ==============================================================================
 
-# --- Datasets & Heavy Archives (Must be hosted on Google Drive) ---
+# --- Carpetas Excluidas (Solicitadas por el Usuario) ---
+.agents/
+agents/
+docs/
+documents/
+scratch/
+
+# --- Experimentos y Checkpoints Intermedios ---
+Entrenar_Data/experiments/
+experiments/
+
+# --- Datasets Pesados y Archivos Comprimidos (Alojados en Google Drive) ---
 Entrenar_Data/Image Dataset/
 **/Image Dataset/
 Image Dataset/
@@ -12,21 +23,28 @@ Image Dataset/
 *.tar
 *.tar.gz
 
-# --- Model Checkpoints & Large Weights ---
-# (best_model.ckpt ~81MB should be hosted on Google Drive / GitHub Releases)
+# --- Modelos Neuronales y Pesos Grandes (>50MB-100MB límite GitHub) ---
 *.ckpt
 *.pth
 *.pt
+*.h5
+*.safetensors
 Entrenar_Data/output/
+output/
 
-# --- Posture Keypoint Models (Always track these, required for inference) ---
+# Excepción: Checkpoint oficial de producción para despliegue directo en Raspberry Pi / otros entornos
+!DigitalScale/backend/weights/best_model.ckpt
+
+# --- Modelos de Keypoints Posturales (Rastreados: necesarios para inferencia) ---
 !DigitalScale/trained_models/keypoint_models/
 !DigitalScale/trained_models/keypoint_models/*.pkl
+!DigitalScale/backend/trained_models/keypoint_models/
+!DigitalScale/backend/trained_models/keypoint_models/*.pkl
 
-# --- Python & Bytecode Cache ---
+# --- Caché de Python, Compilación y Pruebas ---
 __pycache__/
 *.py[cod]
-*$py.class
+*.class
 *.so
 .Python
 build/
@@ -45,8 +63,13 @@ wheels/
 .installed.cfg
 *.egg
 MANIFEST
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
 
-# --- Virtual Environments ---
+# --- Entornos Virtuales ---
 venv/
 .venv/
 env/
@@ -54,14 +77,15 @@ ENV/
 env.bak/
 venv.bak/
 
-# --- Environment Variables ---
+# --- Variables de Entorno y Credenciales ---
 .env
 .env.local
 .env.*.local
 
-# --- IDEs & Editors ---
+# --- IDEs, Editores y Herramientas ---
 .vscode/
 .idea/
+.gemini/
 *.swp
 *.swo
 *~
@@ -69,17 +93,24 @@ venv.bak/
 .pydevproject
 .settings/
 
-# --- Jupyter Notebooks Cache ---
+# --- Caché de Jupyter Notebooks ---
 .ipynb_checkpoints/
 */.ipynb_checkpoints/*
 
-# --- OS Specific Files ---
+# --- Archivos de Sistema Operativo ---
 .DS_Store
 Thumbs.db
 ehthumbs.db
 desktop.ini
 
-# --- Android Build & Gradle Cache ---
+# --- Archivos Temporales y Bloqueos de Office (Word / Excel) ---
+~$*.docx
+~$*.xlsx
+~$*.pptx
+_temp_*
+*.tmp
+
+# --- Caché de Gradle y Build de Android ---
 DigitalScale/app/android/app/.gradle/
 DigitalScale/app/android/.gradle/
 .gradle/
@@ -87,6 +118,6 @@ DigitalScale/app/android/.gradle/
 *.apk
 *.aab
 
-# --- Training Logs & Tracking ---
+# --- Logs de Entrenamiento y Monitoreo ---
 wandb/
 *.log

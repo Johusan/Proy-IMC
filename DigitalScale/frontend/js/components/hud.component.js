@@ -271,17 +271,31 @@ class HudComponent {
     }
 
     const lm = this.landmarks;
+    const nose = lm[0];
     const lSh = lm[11]; // Hombro izq
     const rSh = lm[12]; // Hombro der
     const lHip = lm[23]; // Cadera izq
     const rHip = lm[24]; // Cadera der
+    const lAnkle = lm[27]; // Tobillo izq
+    const rAnkle = lm[28]; // Tobillo der
 
-    // Comprobar visibilidad de hombros y caderas
+    // Comprobar visibilidad anatómica
+    const hasHead = nose && (nose.visibility === undefined || nose.visibility > 0.35);
     const hasShoulders = lSh && rSh && (lSh.visibility === undefined || lSh.visibility > 0.35) && (rSh.visibility === undefined || rSh.visibility > 0.35);
     const hasHips = lHip && rHip && (lHip.visibility === undefined || lHip.visibility > 0.3) && (rHip.visibility === undefined || rHip.visibility > 0.3);
+    const hasAnkles = lAnkle && rAnkle && (lAnkle.visibility === undefined || lAnkle.visibility > 0.3) && (rAnkle.visibility === undefined || rAnkle.visibility > 0.3);
 
-    if (!hasShoulders) {
-      this.updatePill('idle', 'Buscando postura... ubique sus hombros en el encuadre');
+    if (!hasShoulders || !hasHead) {
+      this.updatePill('idle', 'Buscando postura... ubique su cabeza y hombros');
+      this.stableFramesCount = 0;
+      this.cancelCountdown();
+      return;
+    }
+
+    // Centrado horizontal
+    const midX = (lSh.x + rSh.x) / 2.0;
+    if (midX < 0.28 || midX > 0.72) {
+      this.updatePill('alert', 'Centra tu cuerpo en la pantalla');
       this.stableFramesCount = 0;
       this.cancelCountdown();
       return;
@@ -290,27 +304,43 @@ class HudComponent {
     // Ancho de hombros normalizado
     const shoulderWidth = Math.abs(lSh.x - rSh.x);
 
-    // Detección de proximidad excesiva a la lente
-    const isTooClose = shoulderWidth > 0.48 || lSh.x < 0.05 || rSh.x > 0.95;
-
+    // Proximidad excesiva
+    const isTooClose = shoulderWidth > 0.46 || lSh.x < 0.04 || rSh.x > 0.96;
     if (isTooClose) {
-      this.updatePill('alert', 'Demasiado Cerca: Retroceda un paso para enfocar su torso');
+      this.updatePill('alert', 'Demasiado cerca: retrocede un paso');
       this.stableFramesCount = 0;
       this.cancelCountdown();
       return;
     }
 
-    // Si tiene hombros y caderas en encuadre
-    if (hasShoulders && hasHips) {
+    // Comprobación de cuerpo completo (pies y tobillos en encuadre)
+    if (!hasAnkles || (lAnkle && lAnkle.y > 0.98) || (rAnkle && rAnkle.y > 0.98)) {
+      this.updatePill('alert', 'Pies no visibles: da un paso atrás para encuadrar todo tu cuerpo');
+      this.stableFramesCount = 0;
+      this.cancelCountdown();
+      return;
+    }
+
+    // Altura aparente demasiado pequeña
+    const totalHeight = Math.max(lAnkle.y, rAnkle.y) - nose.y;
+    if (totalHeight < 0.42) {
+      this.updatePill('alert', 'Demasiado lejos: acércate un paso');
+      this.stableFramesCount = 0;
+      this.cancelCountdown();
+      return;
+    }
+
+    // Si tiene cuerpo completo, postura y encuadre correctos
+    if (hasShoulders && hasHips && hasAnkles) {
       this.stableFramesCount += 1;
-      this.updatePill('ready', 'Postura Correcta: Manténgase erguido');
+      this.updatePill('ready', 'Postura y encuadre correctos: manténgase quieto');
 
       // Tras 5 frames estables, iniciar cuenta regresiva de 3 segundos
       if (this.stableFramesCount >= 5 && !this.isCountingDown) {
         this.startCountdown();
       }
     } else {
-      this.updatePill('idle', 'Por favor enfoque sus hombros y caderas');
+      this.updatePill('idle', 'Alineando cuerpo completo...');
       this.stableFramesCount = 0;
       this.cancelCountdown();
     }
