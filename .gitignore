@@ -29,6 +29,7 @@ Image Dataset/
 *.pt
 *.h5
 *.safetensors
+*.task
 Entrenar_Data/output/
 output/
 

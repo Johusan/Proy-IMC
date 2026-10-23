@@ -47,7 +47,7 @@ async def lifespan(app: FastAPI):
     posture_service = PostureAnalyzer()
     posture_service.initialize()
     app.state.posture_service = posture_service
-    logger.info("[OK] Analizador de postura MediaPipe y modelos de clustering cargados.")
+    logger.info(f"[OK] Analizador de postura MediaPipe cargado (Modo: {posture_service.api_type}).")
 
     # Abrir navegador automaticamente cuando el servidor este listo
     def open_browser_when_ready():

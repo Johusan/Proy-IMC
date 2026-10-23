@@ -60,14 +60,19 @@ def _execute_prediction_pipeline(
         )
 
     # 2. Recorte inteligente del torso sin bandas negras
-    keypoints = posture_result["keypoint_dict"]
+    keypoints = posture_result.get("keypoint_dict")
     pil_img = Image.fromarray(rgb_image)
 
-    try:
-        cropped_torso = ImageProcessor.get_clean_torso_crop(pil_img, keypoints, w, h)
-    except Exception:
-        # Recorte de respaldo acotado si fallara el cálculo geométrico
-        bbox = posture_result["bbox"]
+    if keypoints:
+        try:
+            cropped_torso = ImageProcessor.get_clean_torso_crop(pil_img, keypoints, w, h)
+        except Exception:
+            bbox = posture_result.get("bbox") or (0, 0, w, h)
+            x1, y1 = max(0, bbox[0]), max(0, bbox[1])
+            x2, y2 = min(w, bbox[2]), min(h, bbox[3])
+            cropped_torso = pil_img.crop((x1, y1, x2, y2))
+    else:
+        bbox = posture_result.get("bbox") or (0, 0, w, h)
         x1, y1 = max(0, bbox[0]), max(0, bbox[1])
         x2, y2 = min(w, bbox[2]), min(h, bbox[3])
         cropped_torso = pil_img.crop((x1, y1, x2, y2))
