@@ -8,12 +8,6 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
 
-echo "==================================================================="
-echo "              DIGITALSCALE AI - SERVIDOR LOCAL"
-echo "          Estimación Biométrica de IMC (Raspberry Pi 5 / Linux)"
-echo "==================================================================="
-echo ""
-
 # Detección y activación del entorno virtual
 VENV_PATH=""
 if [ -f "$SCRIPT_DIR/.venv/bin/activate" ]; then
@@ -58,7 +52,51 @@ if [ ! -f "$WEIGHTS_FILE" ] && [ ! -f "$ALT_WEIGHTS_FILE" ]; then
     exit 1
 fi
 
-echo "[INFO] Iniciando servidor FastAPI en DigitalScale..."
+# Configuración opcional de puerto mediante argumento (ej: ./iniciar_servidor.sh 8080)
+if [ -n "$1" ]; then
+    export DIGITALSCALE_PORT="$1"
+    echo "[CONFIG] Puerto personalizado recibido por argumento: $DIGITALSCALE_PORT"
+fi
+
+TARGET_PORT="${DIGITALSCALE_PORT:-8000}"
+
+# Comprobar si el puerto ya está en uso antes de arrancar
+PORT_IN_USE=false
+if command -v ss &> /dev/null; then
+    if ss -tulpn 2>/dev/null | grep -q ":$TARGET_PORT\b"; then
+        PORT_IN_USE=true
+    fi
+elif command -v lsof &> /dev/null; then
+    if lsof -i :"$TARGET_PORT" &> /dev/null; then
+        PORT_IN_USE=true
+    fi
+fi
+
+if [ "$PORT_IN_USE" = true ]; then
+    echo ""
+
+    echo "[AVISO] El puerto $TARGET_PORT ya está siendo utilizado por otro proceso:"
+    if command -v ss &> /dev/null; then
+        ss -tulpn 2>/dev/null | grep ":$TARGET_PORT\b" || true
+    elif command -v lsof &> /dev/null; then
+        lsof -i :"$TARGET_PORT" || true
+    fi
+    echo ""
+    echo "   Opciones de solución:"
+    echo "   1) Usar otro puerto libre pasando el número como argumento:"
+    echo "      ./iniciar_servidor.sh 8080"
+    echo "      ./iniciar_servidor.sh 8001"
+    echo "   2) O liberar el puerto $TARGET_PORT matando el proceso anterior:"
+    echo "      sudo fuser -k $TARGET_PORT/tcp"
+    echo ""
+    read -r -p "¿Desea continuar de todos modos en el puerto $TARGET_PORT? (s/N): " RESP
+    if [[ ! "$RESP" =~ ^[sSyY]$ ]]; then
+        echo "[CANCELADO] Por favor elija un puerto libre o libere el $TARGET_PORT."
+        exit 1
+    fi
+fi
+
+echo "[INFO] Iniciando servidor FastAPI en DigitalScale (Puerto: $TARGET_PORT)..."
 echo "       Presione Ctrl + C para detener el servidor."
 echo ""
 
