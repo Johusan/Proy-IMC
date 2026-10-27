@@ -61,7 +61,7 @@ pip cache purge 2>/dev/null || true
 
 pip install --no-cache-dir --upgrade pip setuptools wheel
 
-# Instalar PyTorch y torchvision versión CPU-only (¡CRÍTICO: evita descargar >3 GB de librerías NVIDIA CUDA!)
+# Instalar PyTorch y torchvision versión CPU-only 
 echo ""
 echo "[INFO] Instalando PyTorch CPU y Torchvision para ARM64 (sin paquetes NVIDIA)..."
 pip install --no-cache-dir torch torchvision --index-url https://download.pytorch.org/whl/cpu
@@ -112,8 +112,8 @@ chmod +x "$SCRIPT_DIR"/*.sh 2>/dev/null || true
 echo ""
 echo "==================================================================="
 echo "  INSTALACIÓN COMPLETADA EXITOSAMENTE EN RASPBERRY PI 5!"
-echo "  1. Para habilitar la cámara desde otros dispositivos en red:"
-echo "     ./generar_certificados.sh"
-echo "  2. Para iniciar el servidor ejecuta:"
+echo "  1. Para iniciar el servidor ejecuta:"
 echo "     ./iniciar_servidor.sh"
+echo "     (Los certificados HTTPS para la cámara WebRTC se autogeneran"
+echo "      y validan automáticamente con la IP local de tu Raspberry Pi)"
 echo "==================================================================="

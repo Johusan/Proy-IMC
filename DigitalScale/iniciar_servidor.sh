@@ -47,7 +47,6 @@ if [ ! -f "$WEIGHTS_FILE" ] && [ ! -f "$ALT_WEIGHTS_FILE" ]; then
     echo "  Falta: $WEIGHTS_FILE"
     echo ""
     echo "  Recuerda transferir 'best_model.ckpt' desde tu PC de entrenamiento a esa ruta."
-    echo "  (Puedes usar scp, FileZilla o una memoria USB)."
     echo ""
     exit 1
 fi
@@ -96,12 +95,63 @@ if [ "$PORT_IN_USE" = true ]; then
     fi
 fi
 
-# Verificar estado de certificados HTTPS
-if [ -f "$SCRIPT_DIR/certs/cert.pem" ] && [ -f "$SCRIPT_DIR/certs/key.pem" ]; then
-    echo "[SEGURIDAD] Certificados SSL detectados: Modo HTTPS activo."
+# ------------------------------------------------------------------------------
+# 5. AUTO-SANACIÓN Y VALIDACIÓN DE CERTIFICADOS HTTPS PARA WEBRTC
+# ------------------------------------------------------------------------------
+CERT_FILE="$SCRIPT_DIR/certs/cert.pem"
+KEY_FILE="$SCRIPT_DIR/certs/key.pem"
+REGEN_SSL=0
+SSL_REASON=""
+
+# Detectar IP local LAN actual de la Raspberry Pi
+CURRENT_LAN_IP=""
+if command -v hostname &> /dev/null; then
+    for ip in $(hostname -I 2>/dev/null); do
+        if [[ "$ip" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]] && [ "$ip" != "127.0.0.1" ]; then
+            CURRENT_LAN_IP="$ip"
+            break
+        fi
+    done
+fi
+if [ -z "$CURRENT_LAN_IP" ] && command -v ip &> /dev/null; then
+    CURRENT_LAN_IP=$(ip route get 1.1.1.1 2>/dev/null | awk '{print $7}')
+fi
+
+if [ ! -f "$CERT_FILE" ] || [ ! -f "$KEY_FILE" ] || [ ! -s "$CERT_FILE" ] || [ ! -s "$KEY_FILE" ]; then
+    REGEN_SSL=1
+    SSL_REASON="Certificados HTTPS no encontrados o vacíos"
+elif command -v openssl &> /dev/null; then
+    # Verificar vigencia (al menos 24 horas restantes)
+    if ! openssl x509 -in "$CERT_FILE" -noout -checkend 86400 &>/dev/null; then
+        REGEN_SSL=1
+        SSL_REASON="Certificado HTTPS vencido o próximo a expirar"
+    elif [ -n "$CURRENT_LAN_IP" ]; then
+        # Verificar si la IP local actual está en el SAN (Subject Alternative Name)
+        SAN_OUTPUT=$(openssl x509 -in "$CERT_FILE" -noout -ext subjectAltName 2>/dev/null)
+        if ! echo "$SAN_OUTPUT" | grep -q "$CURRENT_LAN_IP"; then
+            REGEN_SSL=1
+            SSL_REASON="Cambio de dirección IP detectado (IP actual: $CURRENT_LAN_IP no está en el certificado)"
+        fi
+    fi
+fi
+
+if [ "$REGEN_SSL" -eq 1 ]; then
+    echo ""
+    echo "[AUTO-SSL] $SSL_REASON."
+    echo "[AUTO-SSL] Regenerando certificados HTTPS automáticamente para asegurar WebRTC..."
+    if [ -f "$SCRIPT_DIR/generar_certificados.sh" ]; then
+        chmod +x "$SCRIPT_DIR/generar_certificados.sh" 2>/dev/null || true
+        "$SCRIPT_DIR/generar_certificados.sh" "$CURRENT_LAN_IP"
+    elif [ -f "$SCRIPT_DIR/generar_certificados.py" ]; then
+        "$PYTHON_CMD" "$SCRIPT_DIR/generar_certificados.py"
+    fi
+    echo ""
+fi
+
+if [ -f "$CERT_FILE" ] && [ -f "$KEY_FILE" ]; then
+    echo "[SEGURIDAD] Modo HTTPS seguro activo (Certificado validado para la IP actual)."
 else
-    echo "[AVISO] Certificados SSL no detectados (Modo HTTP activo)."
-    echo "        Para habilitar la cámara desde otros dispositivos en red, ejecute: ./generar_certificados.sh"
+    echo "[AVISO] Servidor en Modo HTTP no seguro (la cámara puede estar restringida en clientes remotos)."
 fi
 
 echo "[INFO] Iniciando servidor FastAPI en DigitalScale (Puerto: $TARGET_PORT)..."
@@ -109,3 +159,4 @@ echo "       Presione Ctrl + C para detener el servidor."
 echo ""
 
 exec "$PYTHON_CMD" server.py
+

@@ -12,8 +12,9 @@ cd "$SCRIPT_DIR"
 
 CERTS_DIR="$SCRIPT_DIR/certs"
 mkdir -p "$CERTS_DIR"
-
-echo "        DIGITALSCALE AI - GENERADOR DE CERTIFICADOS HTTPS""
+echo "==================================================================="
+echo "        DIGITALSCALE AI - GENERADOR DE CERTIFICADOS HTTPS"
+echo "==================================================================="
 
 # 1. Verificar disponibilidad de OpenSSL
 if ! command -v openssl &> /dev/null; then

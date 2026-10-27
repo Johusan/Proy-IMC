@@ -16,7 +16,14 @@ if BACKEND_DIR not in sys.path:
 if "server" in sys.modules and not hasattr(sys.modules["server"], "__path__"):
     del sys.modules["server"]
 
-from server.config import HOST, PORT, RELOAD, IS_SSL, SSL_CERTFILE, SSL_KEYFILE, PROTOCOL
+try:
+    from generar_certificados import ensure_valid_certificates
+    ensure_valid_certificates()
+except Exception:
+    pass
+
+from server.config import HOST, PORT, RELOAD, SSL_CERTFILE, SSL_KEYFILE
+is_ssl_active = os.path.isfile(SSL_CERTFILE) and os.path.isfile(SSL_KEYFILE)
 
 if __name__ == "__main__":
     import uvicorn
@@ -38,7 +45,7 @@ if __name__ == "__main__":
     local_ip = get_local_ip()
 
     logger.info("Iniciando DigitalScale AI desde la raiz del proyecto...")
-    if IS_SSL:
+    if is_ssl_active:
         logger.info(f"[SEGURIDAD] Modo HTTPS activo (Certificado: {SSL_CERTFILE})")
         logger.info(f"Servidor Seguro Local:  https://localhost:{PORT}")
         if HOST in ("0.0.0.0", ""):
