@@ -148,10 +148,21 @@ if [ "$REGEN_SSL" -eq 1 ]; then
     echo ""
 fi
 
+# Evitar que se intente abrir un navegador de terminal (lynx, links) si la sesión es remota SSH o sin monitor
+if [ -n "$SSH_CLIENT" ] || [ -n "$SSH_TTY" ] || [ -z "$DISPLAY" ]; then
+    export DIGITALSCALE_OPEN_BROWSER=0
+fi
+
 if [ -f "$CERT_FILE" ] && [ -f "$KEY_FILE" ]; then
     echo "[SEGURIDAD] Modo HTTPS seguro activo (Certificado validado para la IP actual)."
+    if [ -n "$CURRENT_LAN_IP" ]; then
+        echo "            -> URL de acceso seguro: https://${CURRENT_LAN_IP}:${TARGET_PORT}"
+    fi
 else
     echo "[AVISO] Servidor en Modo HTTP no seguro (la cámara puede estar restringida en clientes remotos)."
+    if [ -n "$CURRENT_LAN_IP" ]; then
+        echo "        -> URL de acceso: http://${CURRENT_LAN_IP}:${TARGET_PORT}"
+    fi
 fi
 
 echo "[INFO] Iniciando servidor FastAPI en DigitalScale (Puerto: $TARGET_PORT)..."

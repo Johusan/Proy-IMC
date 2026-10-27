@@ -49,14 +49,30 @@ async def lifespan(app: FastAPI):
     app.state.posture_service = posture_service
     logger.info(f"[OK] Analizador de postura MediaPipe cargado (Modo: {posture_service.api_type}).")
 
-    # Abrir navegador automaticamente cuando el servidor este listo
+    # Abrir navegador automaticamente cuando el servidor este listo (solo en entornos graficos locales)
     def open_browser_when_ready():
         import time
         import webbrowser
-        time.sleep(0.6)
+        time.sleep(0.8)
+
+        # Si se deshabilita explicitamente por variable de entorno
+        if os.getenv("DIGITALSCALE_OPEN_BROWSER", "1").lower() in ("0", "false", "no"):
+            return
+
+        # En Linux/Raspberry Pi: evitar invocar navegadores de consola (lynx, links, w3m)
+        # en sesiones SSH o entornos headless sin pantalla grafica activa
+        if sys.platform.startswith("linux"):
+            has_display = bool(os.getenv("DISPLAY") or os.getenv("WAYLAND_DISPLAY"))
+            is_ssh = bool(os.getenv("SSH_CLIENT") or os.getenv("SSH_TTY") or os.getenv("SSH_CONNECTION"))
+            if not has_display or is_ssh:
+                return
+
         web_url = f"{PROTOCOL}://localhost:{PORT}"
-        logger.info(f"Abriendo interfaz web en {web_url} ...")
-        webbrowser.open(web_url)
+        try:
+            logger.info(f"Abriendo interfaz web en {web_url} ...")
+            webbrowser.open(web_url)
+        except Exception:
+            pass
 
     import threading
     threading.Thread(target=open_browser_when_ready, daemon=True).start()
