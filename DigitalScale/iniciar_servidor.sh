@@ -96,6 +96,14 @@ if [ "$PORT_IN_USE" = true ]; then
     fi
 fi
 
+# Verificar estado de certificados HTTPS
+if [ -f "$SCRIPT_DIR/certs/cert.pem" ] && [ -f "$SCRIPT_DIR/certs/key.pem" ]; then
+    echo "[SEGURIDAD] Certificados SSL detectados: Modo HTTPS activo."
+else
+    echo "[AVISO] Certificados SSL no detectados (Modo HTTP activo)."
+    echo "        Para habilitar la cámara desde otros dispositivos en red, ejecute: ./generar_certificados.sh"
+fi
+
 echo "[INFO] Iniciando servidor FastAPI en DigitalScale (Puerto: $TARGET_PORT)..."
 echo "       Presione Ctrl + C para detener el servidor."
 echo ""

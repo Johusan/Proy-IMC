@@ -78,10 +78,15 @@ ENV/
 env.bak/
 venv.bak/
 
-# --- Variables de Entorno y Credenciales ---
+# --- Variables de Entorno, Credenciales y Certificados SSL ---
 .env
 .env.local
 .env.*.local
+certs/
+**/certs/
+*.pem
+*.key
+*.crt
 
 # --- IDEs, Editores y Herramientas ---
 .vscode/

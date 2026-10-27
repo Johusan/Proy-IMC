@@ -107,9 +107,13 @@ print('  * FastAPI versión:', fastapi.__version__)
 print('  * Hilos de CPU PyTorch:', torch.get_num_threads())
 "
 
+chmod +x "$SCRIPT_DIR"/*.sh 2>/dev/null || true
+
 echo ""
 echo "==================================================================="
 echo "  INSTALACIÓN COMPLETADA EXITOSAMENTE EN RASPBERRY PI 5!"
-echo "  Para iniciar el servidor ejecuta:"
-echo "    ./iniciar_servidor.sh"
+echo "  1. Para habilitar la cámara desde otros dispositivos en red:"
+echo "     ./generar_certificados.sh"
+echo "  2. Para iniciar el servidor ejecuta:"
+echo "     ./iniciar_servidor.sh"
 echo "==================================================================="

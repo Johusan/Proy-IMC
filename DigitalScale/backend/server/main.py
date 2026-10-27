@@ -23,7 +23,7 @@ BACKEND_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 if BACKEND_DIR not in sys.path:
     sys.path.append(BACKEND_DIR)
 
-from .config import FRONTEND_DIR, HOST, PORT, RELOAD, ALLOWED_ORIGINS
+from .config import FRONTEND_DIR, HOST, PORT, RELOAD, ALLOWED_ORIGINS, PROTOCOL, IS_SSL, SSL_CERTFILE, SSL_KEYFILE
 from .services import BMIPredictor, PostureAnalyzer
 from .routes import health_router, predict_router
 
@@ -54,7 +54,7 @@ async def lifespan(app: FastAPI):
         import time
         import webbrowser
         time.sleep(0.6)
-        web_url = f"http://localhost:{PORT}"
+        web_url = f"{PROTOCOL}://localhost:{PORT}"
         logger.info(f"Abriendo interfaz web en {web_url} ...")
         webbrowser.open(web_url)
 
@@ -141,8 +141,16 @@ if __name__ == "__main__":
     local_ip = get_local_ip()
 
     logger.info("Iniciando servidor backend modular de DigitalScale AI...")
-    logger.info(f"Servidor Local:       http://localhost:{PORT}")
-    if HOST in ("0.0.0.0", ""):
-        logger.info(f"Acceso en Red Local:  http://{local_ip}:{PORT}")
-    logger.info(f"Documentacion (API):  http://localhost:{PORT}/docs")
-    uvicorn.run("server.main:app", host=HOST, port=PORT, reload=RELOAD)
+    if IS_SSL:
+        logger.info(f"[SEGURIDAD] Modo HTTPS activo (Certificado: {SSL_CERTFILE})")
+        logger.info(f"Servidor Seguro Local:  https://localhost:{PORT}")
+        if HOST in ("0.0.0.0", ""):
+            logger.info(f"Acceso Remoto Seguro:   https://{local_ip}:{PORT}")
+        logger.info(f"Documentacion (API):    https://localhost:{PORT}/docs")
+        uvicorn.run("server.main:app", host=HOST, port=PORT, reload=RELOAD, ssl_keyfile=SSL_KEYFILE, ssl_certfile=SSL_CERTFILE)
+    else:
+        logger.info(f"Servidor Local:       http://localhost:{PORT}")
+        if HOST in ("0.0.0.0", ""):
+            logger.info(f"Acceso en Red Local:  http://{local_ip}:{PORT}")
+        logger.info(f"Documentacion (API):  http://localhost:{PORT}/docs")
+        uvicorn.run("server.main:app", host=HOST, port=PORT, reload=RELOAD)

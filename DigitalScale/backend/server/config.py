@@ -39,6 +39,15 @@ HOST = os.getenv("DIGITALSCALE_HOST", "0.0.0.0")
 PORT = int(os.getenv("DIGITALSCALE_PORT", "8000"))
 RELOAD = os.getenv("DIGITALSCALE_RELOAD", "false").lower() in ("true", "1", "yes")
 
+# Configuracion de seguridad SSL / HTTPS para WebRTC en red local
+CERTS_DIR = os.path.abspath(os.path.join(BASE_DIR, "..", "certs"))
+SSL_CERTFILE = os.getenv("DIGITALSCALE_SSL_CERT", os.path.join(CERTS_DIR, "cert.pem"))
+SSL_KEYFILE = os.getenv("DIGITALSCALE_SSL_KEY", os.path.join(CERTS_DIR, "key.pem"))
+
+# El modo HTTPS se activa automaticamente si existen los certificados en certs/
+IS_SSL = os.path.isfile(SSL_CERTFILE) and os.path.isfile(SSL_KEYFILE)
+PROTOCOL = "https" if IS_SSL else "http"
+
 # Origenes permitidos para seguridad CORS
 _origins_env = os.getenv("DIGITALSCALE_ALLOWED_ORIGINS", "")
 if _origins_env:
